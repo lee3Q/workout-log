@@ -393,38 +393,39 @@ const exercises = {
   },
 
   // === 보조 운동 (횟수 진행) ===
+  // increment: 진행 룰 +단위. 자체중 운동(풀업/행잉)은 null
   lateral_raise: {
-    name: '사이드 레터럴 레이즈', is_main: false, default_sets: 4, default_reps: 12, rep_range: '12-15', rest: '60s',
+    name: '사이드 레터럴 레이즈', is_main: false, default_sets: 4, default_reps: 12, reps_max: 15, rep_range: '12-15', rest: '60s', increment: 1,
     form_tip: '반동 X / 텐션 유지 / 손등이 하늘 향하게',
     alternatives: ['cable_lateral_raise', 'machine_lateral_raise']
   },
   cable_pushdown: {
-    name: '케이블 푸시다운', is_main: false, default_sets: 3, default_reps: 12, rep_range: '12-15', rest: '60s',
+    name: '케이블 푸시다운', is_main: false, default_sets: 3, default_reps: 12, reps_max: 15, rep_range: '12-15', rest: '60s', increment: 2.5,
     form_tip: '팔꿈치 고정 / 반동 X',
     alternatives: ['overhead_extension', 'dumbbell_skull_crusher', 'tricep_dip']
   },
   dumbbell_curl: {
-    name: '덤벨 컬', is_main: false, default_sets: 3, default_reps: 10, rep_range: '10-12', rest: '60s',
+    name: '덤벨 컬', is_main: false, default_sets: 3, default_reps: 10, reps_max: 12, rep_range: '10-12', rest: '60s', increment: 1,
     form_tip: '팔꿈치 고정 / 반동 X / 천천히 내리기',
     alternatives: ['cable_curl', 'barbell_curl', 'hammer_curl']
   },
   hanging_leg_raise: {
-    name: '행잉 니레이즈', is_main: false, default_sets: 3, default_reps: 12, rep_range: '10-15', rest: '60s',
+    name: '행잉 니레이즈', is_main: false, default_sets: 3, default_reps: 12, reps_max: 15, rep_range: '10-15', rest: '60s', increment: null,
     form_tip: '반동 X / 복근으로 들기',
     alternatives: ['cable_crunch', 'ab_rollout']
   },
   pullup_shoulder: {
-    name: '풀업 (어깨넓이)', is_main: false, default_sets: 4, default_reps: 6, rep_range: '6-8', rest: '2분',
+    name: '풀업 (어깨넓이)', is_main: false, default_sets: 4, default_reps: 6, reps_max: 8, rep_range: '6-8', rest: '2분', increment: null,
     form_tip: '견갑 하강 먼저 (어깨 으쓱 X) / 가슴을 바로 끌어올림 / 반동 X / 천천히 내려오기',
     alternatives: ['lat_pulldown', 'assisted_pullup']
   },
   barbell_row: {
-    name: '바벨 로우', is_main: false, default_sets: 3, default_reps: 8, rep_range: '8-10', rest: '90s',
+    name: '바벨 로우', is_main: false, default_sets: 3, default_reps: 8, reps_max: 10, rep_range: '8-10', rest: '90s', increment: 2.5,
     form_tip: '등으로 당기기 (팔로 X) / 허리 중립',
     alternatives: ['seated_cable_row', 'one_arm_dumbbell_row', 't_bar_row']
   },
   face_pull: {
-    name: '페이스풀', is_main: false, default_sets: 3, default_reps: 12, rep_range: '12-15', rest: '60s',
+    name: '페이스풀', is_main: false, default_sets: 3, default_reps: 12, reps_max: 15, rep_range: '12-15', rest: '60s', increment: 1,
     form_tip: '팔꿈치 높게 / 어깨 후면에 자극 느끼기',
     alternatives: ['rear_delt_fly', 'reverse_pec_deck']
   },
@@ -563,7 +564,7 @@ function getLastSessionFor(exId) {
   return null;
 }
 
-// === 진행 판정 ===
+// === 진행 판정 (메인 컴파운드) ===
 function judgeMain(exId) {
   const session = getTodaySession();
   const data = session.exercises[exId];
@@ -605,6 +606,61 @@ function judgeMain(exId) {
       return { result: 'deload', new_weight: p.current_weight_kg, prev_weight: data.main_target_weight };
     }
     return { result: 'fail', new_weight: p.current_weight_kg, prev_weight: data.main_target_weight, fails: p.consecutive_failures };
+  }
+}
+
+// === 진행 판정 (보조 운동) ===
+// 룰: 모든 세트가 reps_max 달성 → 다음에 무게 +increment 권장
+//     일부 미달 → 같은 무게 유지
+//     자체중 운동(풀업/행잉)은 무게 X, 횟수 진행만
+function judgeAccessory(exId) {
+  const session = getTodaySession();
+  const data = session.exercises[exId];
+  if (!data || !data.main_completed || data.skipped) return null;
+
+  const ex = exercises[exId];
+  if (ex.is_main) return null;
+
+  const sets = (data.accessory_sets || []).filter(s => s.r && parseInt(s.r) > 0);
+  if (sets.length === 0) return null;
+
+  // 그날 사용한 무게 추출 (가장 무거운 무게 기준)
+  const weights = sets.map(s => parseFloat(s.w)).filter(w => !isNaN(w) && w > 0);
+  const usedWeight = weights.length ? Math.max(...weights) : null;
+
+  // progression 초기화
+  if (!store.progression[exId]) {
+    store.progression[exId] = {
+      current_weight_kg: usedWeight,
+      next_weight_kg: usedWeight,
+      last_success_date: null,
+      last_logged_date: null
+    };
+  }
+  const p = store.progression[exId];
+  p.last_logged_date = todayDateStr();
+
+  // 모든 세트가 reps_max 달성?
+  const repsMax = ex.reps_max || ex.default_reps;
+  const targetSets = ex.default_sets;
+  const allHit = sets.length >= targetSets &&
+                 sets.slice(0, targetSets).every(s => parseInt(s.r) >= repsMax);
+
+  if (usedWeight !== null) p.current_weight_kg = usedWeight;
+
+  if (allHit && ex.increment && usedWeight !== null) {
+    // 무게 진행
+    p.next_weight_kg = usedWeight + ex.increment;
+    p.last_success_date = todayDateStr();
+    return { result: 'progress', current: usedWeight, next: p.next_weight_kg };
+  } else if (allHit && !ex.increment) {
+    // 자체중 운동 — 횟수만 진행 (다음 세션에 +1회 도전 권장)
+    p.last_success_date = todayDateStr();
+    return { result: 'bodyweight_progress', current: usedWeight };
+  } else {
+    // 무게 유지
+    if (usedWeight !== null) p.next_weight_kg = usedWeight;
+    return { result: 'logged', current: usedWeight };
   }
 }
 
@@ -943,12 +999,27 @@ function renderWorkout(session) {
     html += `<button class="add-set-btn" onclick="addExtraSet('${exId}','challenge')">+ 도전 세트 추가</button>`;
 
   } else {
-    // 보조 운동 — 단순 세트 입력
+    // 보조 운동 — 권장 무게 + 단순 세트 입력
+    const accProg = store.progression[exId];
+    const recommendedWeight = accProg?.next_weight_kg ?? accProg?.current_weight_kg ?? null;
+
+    if (recommendedWeight) {
+      html += `
+        <div class="target-block">
+          <div class="target-label">${accProg?.next_weight_kg && accProg.next_weight_kg > (accProg.current_weight_kg || 0) ? '오늘 도전 무게' : '권장 무게'}</div>
+          <div class="target-value">${recommendedWeight}kg</div>
+          <div class="target-sub">${ex.default_sets}세트 × ${ex.rep_range}회</div>
+        </div>
+      `;
+    }
+
     html += `<div class="section-label">세트</div>`;
     const sets = data.accessory_sets || [];
     if (sets.length === 0) {
-      // 기본 세트 자동 생성
-      data.accessory_sets = Array.from({length: ex.default_sets}, () => ({ w: '', r: '' }));
+      // 기본 세트 자동 생성 — 이전 무게로 채움
+      const defaultW = recommendedWeight ? String(recommendedWeight) : '';
+      const defaultR = ex.default_reps || '';
+      data.accessory_sets = Array.from({length: ex.default_sets}, () => ({ w: defaultW, r: String(defaultR) }));
       save();
     }
     (data.accessory_sets || []).forEach((s, i) => {
@@ -1228,9 +1299,14 @@ function finishSession() {
   const judgments = [];
   session.order.forEach(exId => {
     const ex = exercises[exId];
-    if (!ex || !ex.is_main) return;
-    const judged = judgeMain(exId);
-    if (judged) judgments.push({ exId, ...judged });
+    if (!ex) return;
+    if (ex.is_main) {
+      const judged = judgeMain(exId);
+      if (judged) judgments.push({ exId, type: 'main', ...judged });
+    } else {
+      const judged = judgeAccessory(exId);
+      if (judged) judgments.push({ exId, type: 'accessory', ...judged });
+    }
   });
 
   session.completed = true;
@@ -1249,27 +1325,57 @@ function renderFinish(session) {
 
   const judgments = session.judgments || [];
   if (judgments.length === 0) {
-    html += `<p style="color:#888;text-align:center">메인 컴파운드 진행 판정 X</p>`;
+    html += `<p style="color:#888;text-align:center">진행 판정할 운동 없음 (기록 부족)</p>`;
   } else {
     html += `<div style="font-size:13px;color:#888;margin-bottom:12px;text-align:center">다음 세션 (${getNextSessionDate()})</div>`;
-    judgments.forEach(j => {
-      const ex = exercises[j.exId];
-      const cls = j.result === 'success' ? 'success' : (j.result === 'deload' ? 'deload' : 'fail');
-      let resultText = '';
-      if (j.result === 'success') {
-        resultText = `<b>${j.prev_weight}kg → ${j.new_weight}kg</b> (성공)`;
-      } else if (j.result === 'fail') {
-        resultText = `<b>${j.prev_weight}kg 유지</b> (실패 ${j.fails}회)`;
-      } else if (j.result === 'deload') {
-        resultText = `<b>${j.prev_weight}kg → ${j.new_weight}kg</b> (디로드 -10%)`;
-      }
-      html += `
-        <div class="judge-card ${cls}">
-          <div class="judge-name">${ex.name}</div>
-          <div class="judge-result">${resultText}</div>
-        </div>
-      `;
-    });
+
+    // 메인 먼저, 보조 나중
+    const mains = judgments.filter(j => j.type === 'main');
+    const accs = judgments.filter(j => j.type === 'accessory');
+
+    if (mains.length) {
+      html += `<div class="section-label" style="margin-top:0">메인 컴파운드</div>`;
+      mains.forEach(j => {
+        const ex = exercises[j.exId];
+        const cls = j.result === 'success' ? 'success' : (j.result === 'deload' ? 'deload' : 'fail');
+        let resultText = '';
+        if (j.result === 'success') {
+          resultText = `<b>${j.prev_weight}kg → ${j.new_weight}kg</b> (성공)`;
+        } else if (j.result === 'fail') {
+          resultText = `<b>${j.prev_weight}kg 유지</b> (실패 ${j.fails}회)`;
+        } else if (j.result === 'deload') {
+          resultText = `<b>${j.prev_weight}kg → ${j.new_weight}kg</b> (디로드 -10%)`;
+        }
+        html += `
+          <div class="judge-card ${cls}">
+            <div class="judge-name">${ex.name}</div>
+            <div class="judge-result">${resultText}</div>
+          </div>
+        `;
+      });
+    }
+
+    if (accs.length) {
+      html += `<div class="section-label">보조 운동</div>`;
+      accs.forEach(j => {
+        const ex = exercises[j.exId];
+        const cls = j.result === 'progress' || j.result === 'bodyweight_progress' ? 'success' : 'fail';
+        let resultText = '';
+        if (j.result === 'progress') {
+          resultText = `<b>${j.current}kg ✓ → 다음 ${j.next}kg 도전</b>`;
+        } else if (j.result === 'bodyweight_progress') {
+          resultText = `<b>✓ 다음 +1회 도전</b>`;
+        } else {
+          resultText = `<b>${j.current ? j.current + 'kg' : '기록'} 유지</b>`;
+        }
+        html += `
+          <div class="judge-card ${cls}">
+            <div class="judge-name">${ex.name}</div>
+            <div class="judge-result">${resultText}</div>
+          </div>
+        `;
+      });
+    }
   }
 
   html += `</div>`;
