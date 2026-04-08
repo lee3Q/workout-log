@@ -72,6 +72,16 @@
     .exercise-meta { font-size: 12px; color: #888; margin-top: 4px; }
     .exercise-prev { font-size: 11px; color: #5a6cd9; margin-top: 6px; }
     .exercise-target { font-size: 13px; color: #4caf50; margin-top: 4px; font-weight: 600; }
+    .exercise-form {
+      font-size: 11px;
+      color: #d97757;
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #2a1f1a;
+      border-radius: 6px;
+      line-height: 1.5;
+      border-left: 2px solid #d97757;
+    }
 
     .sets-header {
       display: grid;
@@ -235,7 +245,7 @@
 <div class="exercise-list" id="exerciseList"></div>
 
 <div class="bottom-bar">
-  <button class="copy-btn" id="copyBtn" onclick="finishSession()">세션 종료 + 복사</button>
+  <button class="copy-btn" id="finishBtn" onclick="finishSession()">세션 종료</button>
   <button class="reset-btn" onclick="resetDay()">초기화</button>
 </div>
 
@@ -247,19 +257,30 @@ const DAYS = ['일','월','화','수','목','금','토'];
 // === 운동 정의 ===
 const exercises = {
   // 메인 컴파운드 (5x5 진행 룰)
-  back_squat:    { name: '백 스쿼트',         is_main: true,  default_sets: 5, target_reps: 5, increment: 2.5, start: 50 },
-  bench_press:   { name: '벤치프레스',         is_main: true,  default_sets: 5, target_reps: 5, increment: 2.5, start: 40 },
-  machine_ohp:   { name: '머신 숄더프레스',    is_main: true,  default_sets: 4, target_reps: 7, increment: 2.5, start: 27.5 },
-  deadlift:      { name: '데드리프트',         is_main: true,  default_sets: 5, target_reps: 5, increment: 5,   start: 60 },
+  back_squat:    { name: '백 스쿼트',         is_main: true,  default_sets: 5, target_reps: 5, increment: 2.5, start: 50,
+                   form_tip: '무릎이 발끝 방향 / 허리 중립 / 평행 이상 깊이 / 뒤꿈치 들리면 무게 줄여' },
+  bench_press:   { name: '벤치프레스',         is_main: true,  default_sets: 5, target_reps: 5, increment: 2.5, start: 40,
+                   form_tip: '견갑 후인하강 (어깨 뒤+아래로) / 안전바 필수 / 손목 곧게 / 바는 젖꼭지 라인' },
+  machine_ohp:   { name: '머신 숄더프레스',    is_main: true,  default_sets: 4, target_reps: 7, increment: 2.5, start: 27.5,
+                   form_tip: '코어 잠금 / 허리 과신전 X / 등이 시트에서 떨어지면 무게 줄여' },
+  deadlift:      { name: '데드리프트',         is_main: true,  default_sets: 5, target_reps: 5, increment: 5,   start: 60,
+                   form_tip: '바를 정강이에 가까이 / 등 중립 (굽으면 즉시 STOP) / 힙 힌지로 들기 / 첫 1cm 천천히' },
 
   // 보조 (횟수 진행)
-  lateral_raise:     { name: '사이드 레터럴 레이즈', is_main: false, default_sets: 4, rep_range: '12-15', rest: '60s' },
-  cable_pushdown:    { name: '케이블 푸시다운',      is_main: false, default_sets: 3, rep_range: '12-15', rest: '60s' },
-  dumbbell_curl:     { name: '덤벨/케이블 컬',       is_main: false, default_sets: 3, rep_range: '10-12', rest: '60s' },
-  hanging_leg_raise: { name: '행잉 니레이즈',         is_main: false, default_sets: 3, rep_range: '10-15', rest: '60s' },
-  pullup_shoulder:   { name: '풀업 (어깨넓이)',       is_main: false, default_sets: 4, rep_range: '6-8',   rest: '2분' },
-  barbell_row:       { name: '바벨/시티드 로우',     is_main: false, default_sets: 3, rep_range: '8-10',  rest: '90s' },
-  face_pull:         { name: '페이스풀',             is_main: false, default_sets: 3, rep_range: '12-15', rest: '60s' }
+  lateral_raise:     { name: '사이드 레터럴 레이즈', is_main: false, default_sets: 4, rep_range: '12-15', rest: '60s',
+                       form_tip: '반동 X / 텐션 유지' },
+  cable_pushdown:    { name: '케이블 푸시다운',      is_main: false, default_sets: 3, rep_range: '12-15', rest: '60s',
+                       form_tip: '팔꿈치 고정 / 반동 X' },
+  dumbbell_curl:     { name: '덤벨/케이블 컬',       is_main: false, default_sets: 3, rep_range: '10-12', rest: '60s',
+                       form_tip: '팔꿈치 고정 / 반동 X / 천천히 내리기' },
+  hanging_leg_raise: { name: '행잉 니레이즈',         is_main: false, default_sets: 3, rep_range: '10-15', rest: '60s',
+                       form_tip: '반동 X / 복근으로 들기' },
+  pullup_shoulder:   { name: '풀업 (어깨넓이)',       is_main: false, default_sets: 4, rep_range: '6-8',   rest: '2분',
+                       form_tip: '견갑 하강 먼저 (어깨 으쓱 X) / 가슴을 바로 끌어올림 / 반동 X / 천천히 내려오기' },
+  barbell_row:       { name: '바벨/시티드 로우',     is_main: false, default_sets: 3, rep_range: '8-10',  rest: '90s',
+                       form_tip: '등으로 당기기 (팔로 X) / 허리 중립' },
+  face_pull:         { name: '페이스풀',             is_main: false, default_sets: 3, rep_range: '12-15', rest: '60s',
+                       form_tip: '팔꿈치 높게 / 어깨 후면에 자극 느끼기' }
 };
 
 // === 분할 정의 ===
@@ -475,6 +496,7 @@ function render() {
         <div class="exercise-meta">${metaText}</div>
         ${prevText ? `<div class="exercise-prev">${prevText}</div>` : ''}
         ${targetText ? `<div class="exercise-target">${targetText}</div>` : ''}
+        ${ex.form_tip ? `<div class="exercise-form">⚠ ${ex.form_tip}</div>` : ''}
       </div>
       ${isToday ? `
         <div class="sets-header">
@@ -548,13 +570,15 @@ function addSet(exId) {
   renderRows(exId);
 }
 
-// === 세션 종료 + 진행 판정 + 결과 복사 ===
+// === 세션 종료 + 진행 판정 ===
 function finishSession() {
   const session = getTodaySession();
   if (session.split === 'free') {
     showToast('자유 영역 — 기록 X');
     return;
   }
+
+  if (!confirm('오늘 세션 종료하고 진행 판정할까?')) return;
 
   const split = splits[session.split];
   const judgments = [];
@@ -571,60 +595,32 @@ function finishSession() {
   session.completed = true;
   save();
 
-  // 결과 텍스트 생성
-  const lines = [`${session.date} (${DAYS[session.weekday]}, ${split.name})`, ''];
-  split.exercises.forEach(exId => {
-    const ex = exercises[exId];
-    const sets = (session.exercises[exId] || []).filter(s => s.w || s.r || s.done);
-    if (!sets.length) return;
-    const detail = sets.map(s => `${s.w||'-'}×${s.r||'-'}${s.done?'✓':''}`).join(', ');
-    lines.push(`- ${ex.name}: ${sets.length}세트 (${detail})`);
-  });
-
-  if (judgments.length) {
-    lines.push('', '[진행]');
+  // 결과 alert 생성
+  const lines = ['✅ 세션 종료\n'];
+  if (judgments.length === 0) {
+    lines.push('메인 컴파운드 5세트 미만 → 진행 판정 X');
+  } else {
     judgments.forEach(j => {
       const ex = exercises[j.exId];
-      if (j.result === 'success') lines.push(`- ${ex.name}: ✓ 성공 → 다음 ${j.new_weight}kg`);
-      else if (j.result === 'fail') lines.push(`- ${ex.name}: 실패 (연속 ${store.progression[j.exId].consecutive_failures}회) → 같은 무게 유지`);
-      else if (j.result === 'deload') lines.push(`- ${ex.name}: ⚠ 디로드 → ${j.new_weight}kg`);
+      if (j.result === 'success') {
+        lines.push(`✓ ${ex.name}\n   다음 세션: ${j.new_weight}kg`);
+      } else if (j.result === 'fail') {
+        const fails = store.progression[j.exId]?.consecutive_failures || 1;
+        lines.push(`✗ ${ex.name}\n   같은 무게 유지 (실패 ${fails}회)`);
+      } else if (j.result === 'deload') {
+        lines.push(`⚠ ${ex.name}\n   디로드 → ${j.new_weight}kg (-10%)`);
+      }
     });
   }
 
-  const text = lines.join('\n');
+  alert(lines.join('\n\n'));
 
-  const onCopied = () => {
-    const btn = document.getElementById('copyBtn');
-    btn.textContent = '복사됨!';
-    btn.classList.add('copied');
-
-    const deloads = judgments.filter(j => j.result === 'deload');
-    if (deloads.length) {
-      showToast('디로드: ' + deloads.map(d => exercises[d.exId].name).join(', '), 'deload');
-    } else {
-      showToast('세션 종료 + 복사됨');
-    }
-
-    setTimeout(() => {
-      btn.textContent = '세션 종료 + 복사';
-      btn.classList.remove('copied');
-      render();
-    }, 2500);
-  };
-
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(onCopied).catch(() => fallbackCopy(text, onCopied));
-  } else {
-    fallbackCopy(text, onCopied);
+  const deloads = judgments.filter(j => j.result === 'deload');
+  if (deloads.length) {
+    showToast('디로드 적용: ' + deloads.map(d => exercises[d.exId].name).join(', '), 'deload');
   }
-}
 
-function fallbackCopy(text, cb) {
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  try { document.execCommand('copy'); cb && cb(); } catch(e) {}
-  document.body.removeChild(ta);
+  render();
 }
 
 function resetDay() {
