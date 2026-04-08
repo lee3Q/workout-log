@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>운동 트래커</title>
+  <title>운동 트래커 v2</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1a1a2e">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -55,7 +55,7 @@
       white-space: nowrap;
     }
     .tab.active { color: #7c83ff; border-bottom-color: #7c83ff; }
-    .tab.today { color: #aaa; }
+    .tab.today::after { content: ' •'; color: #4caf50; }
 
     .exercise-list { padding: 12px 16px; }
 
@@ -65,13 +65,13 @@
       margin-bottom: 12px;
       overflow: hidden;
     }
+    .exercise-card.main-lift { border-left: 3px solid #7c83ff; }
 
-    .exercise-header {
-      padding: 14px 16px 10px;
-    }
+    .exercise-header { padding: 14px 16px 10px; }
     .exercise-name { font-size: 16px; font-weight: 600; }
     .exercise-meta { font-size: 12px; color: #888; margin-top: 4px; }
-    .exercise-alt { font-size: 11px; color: #666; margin-top: 2px; }
+    .exercise-prev { font-size: 11px; color: #5a6cd9; margin-top: 6px; }
+    .exercise-target { font-size: 13px; color: #4caf50; margin-top: 4px; font-weight: 600; }
 
     .sets-header {
       display: grid;
@@ -146,13 +146,23 @@
     }
     .add-set-btn:active { background: #2a2a3e; }
 
-    .rest-day {
-      text-align: center;
-      padding: 80px 20px;
+    .preview-note {
+      padding: 12px 16px 14px;
       color: #555;
+      font-size: 12px;
+      text-align: center;
+      font-style: italic;
     }
-    .rest-day .emoji { font-size: 48px; margin-bottom: 16px; }
-    .rest-day p { font-size: 16px; }
+
+    .free-day {
+      text-align: center;
+      padding: 60px 20px;
+      color: #888;
+    }
+    .free-day .emoji { font-size: 48px; margin-bottom: 16px; }
+    .free-day h2 { font-size: 18px; color: #aaa; margin-bottom: 16px; font-weight: 600; }
+    .free-day p { font-size: 13px; line-height: 1.8; color: #777; }
+    .free-day em { color: #d97757; font-style: normal; font-size: 12px; }
 
     .bottom-bar {
       position: fixed;
@@ -168,7 +178,7 @@
       flex: 1;
       padding: 14px;
       border-radius: 12px;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       border: none;
       cursor: pointer;
@@ -180,9 +190,9 @@
     .copy-btn:active { opacity: 0.85; }
 
     .reset-btn {
-      padding: 14px 18px;
+      padding: 14px 16px;
       border-radius: 12px;
-      font-size: 14px;
+      font-size: 13px;
       border: 1px solid #333;
       background: none;
       color: #777;
@@ -198,15 +208,17 @@
       color: white;
       padding: 10px 20px;
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       opacity: 0;
       transition: all 0.25s;
       pointer-events: none;
       z-index: 999;
-      white-space: nowrap;
+      max-width: 90%;
+      text-align: center;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.deload { background: #d97757; }
   </style>
 </head>
 <body>
@@ -223,7 +235,7 @@
 <div class="exercise-list" id="exerciseList"></div>
 
 <div class="bottom-bar">
-  <button class="copy-btn" id="copyBtn" onclick="copyResult()">결과 복사</button>
+  <button class="copy-btn" id="copyBtn" onclick="finishSession()">세션 종료 + 복사</button>
   <button class="reset-btn" onclick="resetDay()">초기화</button>
 </div>
 
@@ -232,131 +244,270 @@
 <script>
 const DAYS = ['일','월','화','수','목','금','토'];
 
-const routines = {
-  1: {
-    name: 'Pull Heavy + 데드',
+// === 운동 정의 ===
+const exercises = {
+  // 메인 컴파운드 (5x5 진행 룰)
+  back_squat:    { name: '백 스쿼트',         is_main: true,  default_sets: 5, target_reps: 5, increment: 2.5, start: 50 },
+  bench_press:   { name: '벤치프레스',         is_main: true,  default_sets: 5, target_reps: 5, increment: 2.5, start: 40 },
+  machine_ohp:   { name: '머신 숄더프레스',    is_main: true,  default_sets: 4, target_reps: 7, increment: 2.5, start: 27.5 },
+  deadlift:      { name: '데드리프트',         is_main: true,  default_sets: 5, target_reps: 5, increment: 5,   start: 60 },
+
+  // 보조 (횟수 진행)
+  lateral_raise:     { name: '사이드 레터럴 레이즈', is_main: false, default_sets: 4, rep_range: '12-15', rest: '60s' },
+  cable_pushdown:    { name: '케이블 푸시다운',      is_main: false, default_sets: 3, rep_range: '12-15', rest: '60s' },
+  dumbbell_curl:     { name: '덤벨/케이블 컬',       is_main: false, default_sets: 3, rep_range: '10-12', rest: '60s' },
+  hanging_leg_raise: { name: '행잉 니레이즈',         is_main: false, default_sets: 3, rep_range: '10-15', rest: '60s' },
+  pullup_shoulder:   { name: '풀업 (어깨넓이)',       is_main: false, default_sets: 4, rep_range: '6-8',   rest: '2분' },
+  barbell_row:       { name: '바벨/시티드 로우',     is_main: false, default_sets: 3, rep_range: '8-10',  rest: '90s' },
+  face_pull:         { name: '페이스풀',             is_main: false, default_sets: 3, rep_range: '12-15', rest: '60s' }
+};
+
+// === 분할 정의 ===
+const splits = {
+  wed_pump: {
+    name: '수 — 약점 펌프 (30분)',
+    intensity: '★',
+    exercises: ['lateral_raise', 'cable_pushdown', 'dumbbell_curl', 'hanging_leg_raise']
+  },
+  thu_push_squat: {
+    name: '목 — Push + Squat',
     intensity: '★★★',
-    defaultSets: [4, 4, 3, 3, 3],
-    exercises: [
-      { name: '데드리프트', meta: '4세트 × 6-8회 · 휴식 3분', alt: '바벨 필수' },
-      { name: '랫풀다운', meta: '4세트 × 10-12회 · 휴식 2분', alt: '대체: 턱걸이' },
-      { name: '원암 덤벨 로우', meta: '3세트 × 10-12회 · 휴식 1.5분', alt: '대체: 케이블 로우' },
-      { name: '암컬 머신', meta: '3세트 × 10-12회 · 휴식 1분', alt: '대체: 덤벨 컬' },
-      { name: '행잉 니레이즈', meta: '3세트 × 10-15회 · 휴식 1분', alt: '' },
-    ]
+    exercises: ['back_squat', 'bench_press', 'machine_ohp', 'cable_pushdown', 'lateral_raise', 'dumbbell_curl']
   },
-  3: {
-    name: 'Push',
-    intensity: '★★',
-    defaultSets: [4, 4, 3, 3],
-    exercises: [
-      { name: '머신 벤치', meta: '4세트 × 10-12회 · 휴식 2분', alt: '대체: 바벨 벤치 / 덤벨 프레스' },
-      { name: '숄더프레스', meta: '4세트 × 10-12회 · 휴식 2분', alt: '대체: 덤벨 숄더프레스' },
-      { name: '케이블 푸시다운', meta: '3세트 × 12-15회 · 휴식 1분', alt: '대체: 오버헤드 익스텐션' },
-      { name: '사레레', meta: '3세트 × 12-15회 · 휴식 1분', alt: '' },
-    ]
-  },
-  4: {
-    name: 'Legs',
-    intensity: '★★',
-    defaultSets: [4, 3, 3, 3],
-    exercises: [
-      { name: '레그프레스', meta: '4세트 × 10-12회 · 휴식 2분', alt: '대체: 스쿼트' },
-      { name: '레그컬', meta: '3세트 × 10-12회 · 휴식 1.5분', alt: '' },
-      { name: '레그 익스텐션', meta: '3세트 × 10-12회 · 휴식 1.5분', alt: '' },
-      { name: '행잉 니레이즈', meta: '3세트 × 10-15회 · 휴식 1분', alt: '' },
-    ]
-  },
-  5: {
-    name: 'Push Heavy',
+  fri_pull_deadlift: {
+    name: '금 — Pull + Deadlift',
     intensity: '★★★',
-    defaultSets: [4, 4, 4, 3, 3],
-    exercises: [
-      { name: '머신 벤치', meta: '4세트 × 10-12회 · 휴식 2분', alt: '대체: 바벨 벤치' },
-      { name: '숄더프레스', meta: '4세트 × 10-12회 · 휴식 2분', alt: '대체: 덤벨 숄더프레스' },
-      { name: '케이블 푸시다운', meta: '4세트 × 12-15회 · 휴식 1분', alt: '대체: 오버헤드 익스텐션' },
-      { name: '사레레', meta: '3세트 × 12-15회 · 휴식 1분', alt: '' },
-      { name: '행잉 니레이즈', meta: '3세트 × 10-15회 · 휴식 1분', alt: '' },
-    ]
+    exercises: ['deadlift', 'pullup_shoulder', 'barbell_row', 'dumbbell_curl', 'face_pull', 'hanging_leg_raise']
   }
 };
 
-let state = {};
-try { state = JSON.parse(localStorage.getItem('workoutState') || '{}'); } catch(e) {}
+// 요일 → 분할 (0=일, 3=수, 4=목, 5=금)
+const daySplit = { 3: 'wed_pump', 4: 'thu_push_squat', 5: 'fri_pull_deadlift' };
 
-const today = new Date().getDay();
-let selectedDay = routines[today] ? today : 1;
+// === 저장소 (localStorage) ===
+let store = { sessions: {}, progression: {}, meta: { version: 2 } };
+try {
+  const saved = localStorage.getItem('workoutState_v2');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    store = { sessions: {}, progression: {}, meta: { version: 2 }, ...parsed };
+  }
+} catch(e) { console.error(e); }
+
+function save() {
+  localStorage.setItem('workoutState_v2', JSON.stringify(store));
+}
+
+// === 헬퍼 ===
+function todayDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getTargetWeight(exId) {
+  const ex = exercises[exId];
+  if (!ex.is_main) return null;
+  const p = store.progression[exId];
+  return p ? p.current_weight_kg : ex.start;
+}
+
+function getLastSessionFor(exId) {
+  const dates = Object.keys(store.sessions).sort().reverse();
+  const today = todayDateStr();
+  for (const date of dates) {
+    if (date === today) continue;
+    const sess = store.sessions[date];
+    if (sess.exercises && sess.exercises[exId]) {
+      const sets = (sess.exercises[exId] || []).filter(s => s.w || s.r);
+      if (sets.length) return { date, sets };
+    }
+  }
+  return null;
+}
+
+function judgeMain(exId, sets) {
+  const ex = exercises[exId];
+  if (!ex.is_main) return null;
+
+  // 최소 세트 수 확인
+  const validSets = sets.filter(s => s.r && s.r !== '');
+  if (validSets.length < ex.default_sets) return null;
+
+  // 5x5 모두 target_reps 이상 달성?
+  const allHit = validSets.slice(0, ex.default_sets).every(s => parseInt(s.r) >= ex.target_reps);
+
+  if (!store.progression[exId]) {
+    store.progression[exId] = {
+      current_weight_kg: ex.start,
+      consecutive_failures: 0,
+      last_success_date: null,
+      last_failure_date: null
+    };
+  }
+
+  const p = store.progression[exId];
+  const today = todayDateStr();
+
+  if (allHit) {
+    p.current_weight_kg += ex.increment;
+    p.consecutive_failures = 0;
+    p.last_success_date = today;
+    return { result: 'success', new_weight: p.current_weight_kg };
+  } else {
+    p.consecutive_failures++;
+    p.last_failure_date = today;
+    if (p.consecutive_failures >= 2) {
+      p.current_weight_kg = Math.round((p.current_weight_kg * 0.9) / 2.5) * 2.5;
+      p.consecutive_failures = 0;
+      return { result: 'deload', new_weight: p.current_weight_kg };
+    }
+    return { result: 'fail', new_weight: p.current_weight_kg };
+  }
+}
+
+// === 세션 ===
+function getTodaySession() {
+  const dateStr = todayDateStr();
+  if (!store.sessions[dateStr]) {
+    const weekday = new Date().getDay();
+    const splitId = daySplit[weekday] || 'free';
+    store.sessions[dateStr] = {
+      date: dateStr,
+      weekday,
+      split: splitId,
+      exercises: {},
+      completed: false
+    };
+    save();
+  }
+  return store.sessions[dateStr];
+}
+
+let viewSplit = null;
 
 function init() {
   const now = new Date();
   document.getElementById('todayDate').textContent =
     `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${DAYS[now.getDay()]})`;
+  viewSplit = daySplit[now.getDay()] || 'free';
   renderTabs();
-  renderRoutine(selectedDay);
+  render();
 }
 
 function renderTabs() {
   const tabs = document.getElementById('routineTabs');
   tabs.innerHTML = '';
-  [0,1,2,3,4,5,6].forEach(d => {
+  const order = ['wed_pump', 'thu_push_squat', 'fri_pull_deadlift', 'free'];
+  const labels = { wed_pump: '수 보조', thu_push_squat: '목 P+S', fri_pull_deadlift: '금 P+D', free: '자유' };
+  const todaySplit = daySplit[new Date().getDay()] || 'free';
+
+  order.forEach(splitId => {
     const tab = document.createElement('div');
-    tab.className = 'tab' + (d === selectedDay ? ' active' : '') + (d === today ? ' today' : '');
-    tab.textContent = DAYS[d] + (routines[d] ? '' : '');
-    tab.onclick = () => { selectedDay = d; renderTabs(); renderRoutine(d); };
+    tab.className = 'tab' + (splitId === viewSplit ? ' active' : '') + (splitId === todaySplit ? ' today' : '');
+    tab.textContent = labels[splitId];
+    tab.onclick = () => { viewSplit = splitId; renderTabs(); render(); };
     tabs.appendChild(tab);
   });
 }
 
-function dayState(d) {
-  if (!state[d]) state[d] = {};
-  return state[d];
-}
-
-function renderRoutine(day) {
+function render() {
   const list = document.getElementById('exerciseList');
-  const routine = routines[day];
 
-  if (!routine) {
-    document.getElementById('routineName').textContent = '휴식일';
+  if (viewSplit === 'free') {
+    document.getElementById('routineName').textContent = '자유 영역';
     document.getElementById('intensityStars').textContent = '';
-    list.innerHTML = `<div class="rest-day"><div class="emoji">😴</div><p>오늘은 완전 휴식</p></div>`;
+    list.innerHTML = `
+      <div class="free-day">
+        <div class="emoji">🚴</div>
+        <h2>오늘은 자유</h2>
+        <p>
+          <b>토</b> — 가벼운 자전거 OR 휴식<br>
+          <b>일</b> — 자전거/맨몸/휴식 자유<br>
+          <b>월</b> — 휴식 강력 권장 (목 빅데이 회복)<br>
+          <b>화</b> — 자전거/맨몸/휴식 자유<br><br>
+          <em>헬스 외 빡센 다리 운동 X</em>
+        </p>
+      </div>
+    `;
     return;
   }
 
-  document.getElementById('routineName').textContent = routine.name;
-  document.getElementById('intensityStars').textContent = routine.intensity;
+  const split = splits[viewSplit];
+  if (!split) return;
 
-  const ds = dayState(day);
+  document.getElementById('routineName').textContent = split.name;
+  document.getElementById('intensityStars').textContent = split.intensity;
+
+  const todayWeekday = new Date().getDay();
+  const isToday = (daySplit[todayWeekday] === viewSplit);
+
+  let session = null;
+  if (isToday) session = getTodaySession();
+
   list.innerHTML = '';
 
-  routine.exercises.forEach((ex, ei) => {
-    if (!ds[ex.name]) {
-      ds[ex.name] = Array.from({length: routine.defaultSets[ei]}, () => ({w:'',r:'',done:false}));
+  split.exercises.forEach(exId => {
+    const ex = exercises[exId];
+    const card = document.createElement('div');
+    card.className = 'exercise-card' + (ex.is_main ? ' main-lift' : '');
+
+    let metaText = '';
+    let targetText = '';
+    let prevText = '';
+
+    if (ex.is_main) {
+      const target = getTargetWeight(exId);
+      metaText = `${ex.default_sets}×${ex.target_reps} · 휴식 3분`;
+      targetText = `오늘 목표: ${target}kg × ${ex.default_sets}×${ex.target_reps}`;
+    } else {
+      metaText = `${ex.default_sets}×${ex.rep_range} · 휴식 ${ex.rest}`;
     }
 
-    const card = document.createElement('div');
-    card.className = 'exercise-card';
+    const last = getLastSessionFor(exId);
+    if (last) {
+      const summary = last.sets.map(s => `${s.w||'-'}×${s.r||'-'}`).join(', ');
+      prevText = `지난번 (${last.date.slice(5)}): ${summary}`;
+    }
+
     card.innerHTML = `
       <div class="exercise-header">
         <div class="exercise-name">${ex.name}</div>
-        <div class="exercise-meta">${ex.meta}</div>
-        ${ex.alt ? `<div class="exercise-alt">${ex.alt}</div>` : ''}
+        <div class="exercise-meta">${metaText}</div>
+        ${prevText ? `<div class="exercise-prev">${prevText}</div>` : ''}
+        ${targetText ? `<div class="exercise-target">${targetText}</div>` : ''}
       </div>
-      <div class="sets-header">
-        <span>세트</span><span>무게</span><span>횟수</span><span></span>
-      </div>
-      <div id="rows-${day}-${ei}"></div>
-      <button class="add-set-btn" onclick="addSet(${day},'${ex.name}',${ei})">+ 세트 추가</button>
+      ${isToday ? `
+        <div class="sets-header">
+          <span>세트</span><span>무게</span><span>횟수</span><span></span>
+        </div>
+        <div id="rows-${exId}"></div>
+        <button class="add-set-btn" onclick="addSet('${exId}')">+ 세트 추가</button>
+      ` : `
+        <div class="preview-note">미리보기 (오늘 아님)</div>
+      `}
     `;
     list.appendChild(card);
-    renderRows(day, ex.name, ei);
+
+    if (isToday) {
+      if (!session.exercises[exId]) {
+        const target = ex.is_main ? getTargetWeight(exId) : '';
+        session.exercises[exId] = Array.from({length: ex.default_sets}, () => ({
+          w: target ? String(target) : '',
+          r: '',
+          done: false
+        }));
+        save();
+      }
+      renderRows(exId);
+    }
   });
 }
 
-function renderRows(day, exName, ei) {
-  const container = document.getElementById(`rows-${day}-${ei}`);
+function renderRows(exId) {
+  const container = document.getElementById(`rows-${exId}`);
   if (!container) return;
-  const sets = dayState(day)[exName];
+  const session = getTodaySession();
+  const sets = session.exercises[exId] || [];
   container.innerHTML = '';
   sets.forEach((s, i) => {
     const row = document.createElement('div');
@@ -364,75 +515,107 @@ function renderRows(day, exName, ei) {
     row.innerHTML = `
       <div class="set-num">${i+1}</div>
       <input class="set-input" type="text" inputmode="decimal" placeholder="무게/핀"
-        value="${s.w}" onchange="upd(${day},'${exName}',${i},'w',this.value)">
+        value="${s.w}" onchange="upd('${exId}',${i},'w',this.value)">
       <input class="set-input" type="number" inputmode="numeric" placeholder="횟수"
-        value="${s.r}" onchange="upd(${day},'${exName}',${i},'r',this.value)">
+        value="${s.r}" onchange="upd('${exId}',${i},'r',this.value)">
       <button class="set-done${s.done?' checked':''}"
-        onclick="toggleDone(${day},'${exName}',${i},${ei})">✓</button>
+        onclick="toggleDone('${exId}',${i})">✓</button>
     `;
     container.appendChild(row);
   });
 }
 
-function upd(day, name, i, field, val) {
-  dayState(day)[name][i][field] = val;
+function upd(exId, i, field, val) {
+  const session = getTodaySession();
+  if (!session.exercises[exId]) return;
+  session.exercises[exId][i][field] = val;
   save();
 }
 
-function toggleDone(day, name, i, ei) {
-  const s = dayState(day)[name][i];
-  s.done = !s.done;
+function toggleDone(exId, i) {
+  const session = getTodaySession();
+  if (!session.exercises[exId]) return;
+  session.exercises[exId][i].done = !session.exercises[exId][i].done;
   save();
-  renderRows(day, name, ei);
+  renderRows(exId);
 }
 
-function addSet(day, name, ei) {
-  dayState(day)[name].push({w:'',r:'',done:false});
+function addSet(exId) {
+  const session = getTodaySession();
+  if (!session.exercises[exId]) session.exercises[exId] = [];
+  session.exercises[exId].push({w:'', r:'', done:false});
   save();
-  renderRows(day, name, ei);
+  renderRows(exId);
 }
 
-function save() {
-  localStorage.setItem('workoutState', JSON.stringify(state));
-}
+// === 세션 종료 + 진행 판정 + 결과 복사 ===
+function finishSession() {
+  const session = getTodaySession();
+  if (session.split === 'free') {
+    showToast('자유 영역 — 기록 X');
+    return;
+  }
 
-function resetDay() {
-  if (!confirm('오늘 기록을 초기화할까요?')) return;
-  state[selectedDay] = {};
+  const split = splits[session.split];
+  const judgments = [];
+
+  // 메인 컴파운드 진행 판정
+  split.exercises.forEach(exId => {
+    const ex = exercises[exId];
+    if (!ex.is_main) return;
+    const sets = session.exercises[exId] || [];
+    const judged = judgeMain(exId, sets);
+    if (judged) judgments.push({ exId, ...judged });
+  });
+
+  session.completed = true;
   save();
-  renderRoutine(selectedDay);
-}
 
-function copyResult() {
-  const routine = routines[selectedDay];
-  if (!routine) return;
-
-  const now = new Date();
-  const d = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  const ds = dayState(selectedDay);
-
-  let lines = [`${d} 운동 (${routine.name})\n`];
-  routine.exercises.forEach(ex => {
-    const sets = (ds[ex.name] || []).filter(s => s.w || s.r || s.done);
+  // 결과 텍스트 생성
+  const lines = [`${session.date} (${DAYS[session.weekday]}, ${split.name})`, ''];
+  split.exercises.forEach(exId => {
+    const ex = exercises[exId];
+    const sets = (session.exercises[exId] || []).filter(s => s.w || s.r || s.done);
     if (!sets.length) return;
-    const detail = sets.map(s => `${s.w||'-'}×${s.r||'-'}`).join(', ');
+    const detail = sets.map(s => `${s.w||'-'}×${s.r||'-'}${s.done?'✓':''}`).join(', ');
     lines.push(`- ${ex.name}: ${sets.length}세트 (${detail})`);
   });
 
+  if (judgments.length) {
+    lines.push('', '[진행]');
+    judgments.forEach(j => {
+      const ex = exercises[j.exId];
+      if (j.result === 'success') lines.push(`- ${ex.name}: ✓ 성공 → 다음 ${j.new_weight}kg`);
+      else if (j.result === 'fail') lines.push(`- ${ex.name}: 실패 (연속 ${store.progression[j.exId].consecutive_failures}회) → 같은 무게 유지`);
+      else if (j.result === 'deload') lines.push(`- ${ex.name}: ⚠ 디로드 → ${j.new_weight}kg`);
+    });
+  }
+
   const text = lines.join('\n');
 
-  const copy = (t) => {
+  const onCopied = () => {
     const btn = document.getElementById('copyBtn');
     btn.textContent = '복사됨!';
     btn.classList.add('copied');
-    showToast('복사됨! Claude에 붙여넣기');
-    setTimeout(() => { btn.textContent = '결과 복사'; btn.classList.remove('copied'); }, 2000);
+
+    const deloads = judgments.filter(j => j.result === 'deload');
+    if (deloads.length) {
+      showToast('디로드: ' + deloads.map(d => exercises[d.exId].name).join(', '), 'deload');
+    } else {
+      showToast('세션 종료 + 복사됨');
+    }
+
+    setTimeout(() => {
+      btn.textContent = '세션 종료 + 복사';
+      btn.classList.remove('copied');
+      render();
+    }, 2500);
   };
 
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(copy).catch(() => fallbackCopy(text, copy));
+    navigator.clipboard.writeText(text).then(onCopied).catch(() => fallbackCopy(text, onCopied));
   } else {
-    fallbackCopy(text, copy);
+    fallbackCopy(text, onCopied);
   }
 }
 
@@ -440,15 +623,23 @@ function fallbackCopy(text, cb) {
   const ta = document.createElement('textarea');
   ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
   document.body.appendChild(ta); ta.focus(); ta.select();
-  try { document.execCommand('copy'); cb(); } catch(e) {}
+  try { document.execCommand('copy'); cb && cb(); } catch(e) {}
   document.body.removeChild(ta);
 }
 
-function showToast(msg) {
+function resetDay() {
+  if (!confirm('오늘 기록을 초기화할까요? (진행 상태는 유지)')) return;
+  const dateStr = todayDateStr();
+  delete store.sessions[dateStr];
+  save();
+  render();
+}
+
+function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  t.className = 'toast show' + (type === 'deload' ? ' deload' : '');
+  setTimeout(() => t.classList.remove('show'), 3500);
 }
 
 if ('serviceWorker' in navigator) {

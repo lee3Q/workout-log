@@ -1,4 +1,4 @@
-const CACHE = 'workout-v1';
+const CACHE = 'workout-v2';
 const ASSETS = ['./index.html', './manifest.json', './sw.js', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -13,8 +13,15 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// network-first 전략: 매번 네트워크 우선, 오프라인일 때만 캐시 fallback
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('./index.html')))
+    fetch(e.request)
+      .then(r => {
+        const clone = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {});
+        return r;
+      })
+      .catch(() => caches.match(e.request).then(r => r || caches.match('./index.html')))
   );
 });
