@@ -322,7 +322,7 @@
     <button class="btn-secondary" id="btnStretch">🧘 스트레칭</button>
     <button class="btn-primary" id="btnStartSession">▶ 시작</button>
   </div>
-  <div id="versionFooter">workout v4.4</div>
+  <div id="versionFooter">workout v4.5</div>
 </div>
 
 <!-- ===== 세션 진행 ===== -->
@@ -383,7 +383,7 @@
 
   <div id="sessionFooter">
     <button class="btn-secondary btn-sm" id="btnRemoveSet" disabled>세트 빼기</button>
-    <button class="btn-secondary btn-sm" id="btnSkipEx">운동 스킵</button>
+    <button class="btn-secondary btn-sm" id="btnNextEx">다음 운동 →</button>
     <button class="btn-danger btn-sm" id="btnEndSession">종료</button>
   </div>
 </div>
@@ -962,8 +962,7 @@ function renderSessionExercise() {
 }
 
 function renderSetUI(exEntry, exInfo) {
-  const totalSets = exEntry.plan_sets + exEntry.extra_sets;
-  document.getElementById('setLabel').textContent = '세트 ' + (sessionSetIdx + 1) + ' / ' + totalSets;
+  updateSetLabel(exEntry);
 
   // Determine default weight and reps
   const lastSetW = exEntry.sets.length > 0 ? exEntry.sets[exEntry.sets.length - 1].w : null;
@@ -1002,6 +1001,17 @@ function renderSetUI(exEntry, exInfo) {
     hintEl.style.display = 'none';
   }
 
+  // 마지막 운동 여부에 따라 [다음 운동 →] / [세션 완료 ✓] 동적 변경
+  const btnNext = document.getElementById('btnNextEx');
+  const isLastEx = sessionExIdx >= currentSession.exercises.length - 1;
+  if (isLastEx) {
+    btnNext.textContent = '세션 완료 ✓';
+    btnNext.className = 'btn-primary btn-sm';
+  } else {
+    btnNext.textContent = '다음 운동 →';
+    btnNext.className = 'btn-secondary btn-sm';
+  }
+
   renderSetChips(exEntry);
   stopTimer();
 }
@@ -1026,19 +1036,23 @@ function renderSetChips(exEntry) {
   document.getElementById('btnRemoveSet').disabled = doneSets.length === 0;
 }
 
+function updateSetLabel(exEntry) {
+  const totalSoFar = Math.max(exEntry.plan_sets + exEntry.extra_sets, sessionSetIdx + 1);
+  document.getElementById('setLabel').textContent = '세트 ' + (sessionSetIdx + 1) + ' / ' + totalSoFar;
+}
+
 function doneSet() {
   const exEntry = currentSession.exercises[sessionExIdx];
   const w = parseFloat(document.getElementById('wVal').dataset.val) || 0;
   const r = parseInt(document.getElementById('rVal').dataset.val) || 0;
   exEntry.sets[sessionSetIdx] = { w: w, r: r, done: true };
 
-  // 자동 extra_sets 증가: 마지막 세트 완료 후 다음 세트 진행 시
+  // extra_sets 증가: plan_sets 초과분 반영
   const completedCount = exEntry.sets.filter(function(s) { return s && s.done; }).length;
   if (completedCount > exEntry.plan_sets + exEntry.extra_sets) {
     exEntry.extra_sets++;
   }
 
-  const totalSets = exEntry.plan_sets + exEntry.extra_sets;
   const routine = getCurrentRoutine();
   const exInfo = routine.exercises[exEntry.exercise_id] || {};
 
@@ -1059,37 +1073,22 @@ function doneSet() {
   // 짧은 진동 (타이머 완료 진동과 구분)
   try { navigator.vibrate && navigator.vibrate(80); } catch(e) {}
 
+  // 항상 다음 세트 인덱스로 전진
+  sessionSetIdx++;
+
+  // setLabel 동적 갱신: M = max(plan_sets + extra_sets, sessionSetIdx + 1)
+  updateSetLabel(exEntry);
+  // carry weight/reps forward
+  document.getElementById('wVal').textContent = w;
+  document.getElementById('wVal').dataset.val = w;
+  document.getElementById('rVal').textContent = r;
+  document.getElementById('rVal').dataset.val = r;
+
   const restS = exInfo.rest_s != null ? exInfo.rest_s : 60;
-
-  if (restS === 0) {
-    // No rest: advance immediately without a timer
-    if (sessionSetIdx + 1 < totalSets) {
-      sessionSetIdx++;
-      document.getElementById('setLabel').textContent = '세트 ' + (sessionSetIdx + 1) + ' / ' + totalSets;
-      document.getElementById('wVal').textContent = w;
-      document.getElementById('wVal').dataset.val = w;
-      document.getElementById('rVal').textContent = r;
-      document.getElementById('rVal').dataset.val = r;
-    } else {
-      advanceExercise();
-    }
-    return;
-  }
-
   if (restS > 0) {
     startTimer(restS);
   }
-
-  if (sessionSetIdx + 1 < totalSets) {
-    sessionSetIdx++;
-    document.getElementById('setLabel').textContent = '세트 ' + (sessionSetIdx + 1) + ' / ' + totalSets;
-    // carry weight/reps forward
-    document.getElementById('wVal').textContent = w;
-    document.getElementById('wVal').dataset.val = w;
-    document.getElementById('rVal').textContent = r;
-    document.getElementById('rVal').dataset.val = r;
-  }
-  // if all sets done: timer end will trigger advanceExercise
+  // advanceExercise 절대 호출하지 않음
 }
 
 function allSetsDone(exEntry) {
@@ -1161,13 +1160,7 @@ function timerDone() {
   try { navigator.vibrate([200, 100, 200]); } catch(e) {}
   beep();
   document.getElementById('timerSection').classList.remove('visible');
-  // advance if current exercise all sets are done
-  if (currentSession) {
-    const exEntry = currentSession.exercises[sessionExIdx];
-    if (exEntry && allSetsDone(exEntry)) {
-      advanceExercise();
-    }
-  }
+  // advanceExercise 호출 없음 — 사용자가 [다음 운동 →] 버튼으로 직접 전진
 }
 
 function stopTimer() {
@@ -2002,7 +1995,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('setLabel').textContent = '세트 ' + (sessionSetIdx + 1) + ' / ' + totalSets;
     renderSetChips(exEntry);
   });
-  document.getElementById('btnSkipEx').addEventListener('click', function() {
+  document.getElementById('btnNextEx').addEventListener('click', function() {
     stopTimer();
     advanceExercise();
   });
