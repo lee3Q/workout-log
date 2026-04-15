@@ -81,6 +81,11 @@
   #homeDate { font-size: 1.05rem; font-weight: 700; }
   #noWorkoutMsg { text-align: center; padding: 40px 0; color: var(--text2); line-height: 1.8; }
 
+  /* 홈 비헬스날 버튼 그룹 */
+  .rest-day-buttons { display: flex; gap: 10px; margin-top: 8px; }
+  .rest-day-buttons button { flex: 1; padding: 18px 8px; font-size: 0.9rem; }
+  .rest-day-note { font-size: 0.82rem; color: var(--warn); text-align: center; margin-bottom: 12px; padding: 10px 14px; background: var(--bg3); border-radius: 10px; }
+
   /* --- 세션 --- */
   #sessionProgress {
     background: var(--bg3);
@@ -237,7 +242,24 @@
   }
   #toast.show { opacity: 1; }
 
-  /* cycling inline */
+  /* --- 자전거 세션 --- */
+  #screenCycling .scroll-body .session-header { font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: 20px; }
+  .cycling-session-field { background: var(--bg2); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .cycling-session-field label.field-label { margin-top: 0; }
+
+  /* --- 맨몸 세션 --- */
+  #screenBodyweight .scroll-body .session-header { font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: 20px; }
+  .bw-exercise-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .bw-exercise-title { font-size: 1rem; font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .bw-sets { display: flex; flex-direction: column; gap: 8px; }
+  .bw-set-row { display: flex; align-items: center; gap: 8px; }
+  .bw-set-row span { font-size: 0.82rem; color: var(--text2); min-width: 40px; }
+  .bw-set-row input.bw-reps { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 1rem; width: 70px; text-align: center; }
+  .bw-add-set-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--accent); padding: 6px 12px; font-size: 0.82rem; font-weight: 700; flex: none; }
+  .bw-del-set-btn { background: transparent; color: var(--text2); padding: 4px 8px; font-size: 0.9rem; flex: none; }
+  .bw-del-ex-btn { background: transparent; color: var(--text2); padding: 4px 6px; font-size: 0.9rem; border: none; }
+
+  /* cycling inline in report (kept for backwards compat) */
   .cycling-fields { display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
   .cycling-fields label { font-size: 0.85rem; color: var(--text2); display: flex; align-items: center; gap: 6px; }
 </style>
@@ -257,9 +279,19 @@
     </div>
   </header>
   <div class="scroll-body" id="homeBody">
+    <!-- 헬스날: 운동 카드 -->
     <div id="exerciseCards"></div>
+    <!-- 비헬스날: 세션 타입 선택 -->
+    <div id="restDayPanel" style="display:none">
+      <div id="monNote" class="rest-day-note" style="display:none">목 빅데이 2일 후. 완전 휴식 권장.</div>
+      <div class="rest-day-buttons">
+        <button class="btn-secondary" id="btnStartCycling">🚴 자전거</button>
+        <button class="btn-secondary" id="btnStartBodyweight">💪 맨몸 운동</button>
+        <button class="btn-secondary" id="btnStartRest">😴 휴식</button>
+      </div>
+    </div>
   </div>
-  <div class="footer-bar">
+  <div class="footer-bar" id="homeFooter">
     <button class="btn-secondary" id="btnStretch">🧘 스트레칭</button>
     <button class="btn-primary" id="btnStartSession">▶ 시작</button>
   </div>
@@ -322,10 +354,60 @@
   </div>
 
   <div id="sessionFooter">
-    <button class="btn-secondary btn-sm" id="btnAddSet">세트 추가</button>
     <button class="btn-secondary btn-sm" id="btnRemoveSet" disabled>세트 빼기</button>
     <button class="btn-secondary btn-sm" id="btnSkipEx">운동 스킵</button>
     <button class="btn-danger btn-sm" id="btnEndSession">종료</button>
+  </div>
+</div>
+
+<!-- ===== 자전거 세션 ===== -->
+<div id="screenCycling" class="screen">
+  <header>
+    <h1>🚴 자전거</h1>
+    <button class="btn-icon" id="btnCyclingBack">✕</button>
+  </header>
+  <div class="scroll-body">
+    <div class="cycling-session-field">
+      <label class="field-label">시간 (분)</label>
+      <input class="num-field" id="cyclingMin" type="number" min="0" max="600" value="60" style="width:100px">
+    </div>
+    <div class="cycling-session-field">
+      <label class="field-label">강도 (1–10)</label>
+      <div class="slider-row">
+        <span>1</span>
+        <input type="range" id="cyclingIntSlider" min="1" max="10" value="7">
+        <span>10</span>
+        <span class="val" id="cyclingIntVal">7</span>
+      </div>
+    </div>
+    <div class="cycling-session-field">
+      <label class="field-label">거리 km (선택)</label>
+      <input class="num-field" id="cyclingDist" type="number" min="0" max="500" step="0.1" placeholder="—" style="width:100px">
+    </div>
+    <div class="cycling-session-field">
+      <label class="field-label">메모 (코스·장소·느낌)</label>
+      <textarea class="report-ta" id="cyclingNote" placeholder="예: 한강 왕복, 맞바람 강함…" style="min-height:60px"></textarea>
+    </div>
+  </div>
+  <div class="footer-bar">
+    <button class="btn-secondary" id="btnCyclingCancel">취소</button>
+    <button class="btn-primary" id="btnCyclingSave">저장</button>
+  </div>
+</div>
+
+<!-- ===== 맨몸 세션 ===== -->
+<div id="screenBodyweight" class="screen">
+  <header>
+    <h1>💪 맨몸 운동</h1>
+    <button class="btn-icon" id="btnBodyweightBack">✕</button>
+  </header>
+  <div class="scroll-body">
+    <div id="bwExerciseList"></div>
+    <button class="btn-secondary" id="btnAddBwExercise" style="width:100%;margin-top:4px">+ 다른 운동 추가</button>
+  </div>
+  <div class="footer-bar">
+    <button class="btn-secondary" id="btnBodyweightCancel">취소</button>
+    <button class="btn-primary" id="btnBodyweightSave">저장</button>
   </div>
 </div>
 
@@ -341,20 +423,33 @@
   <div class="scroll-body">
 
     <div class="report-section">
-      <h3>오늘 운동 요약</h3>
-      <div id="reportSessionSummary"><span style="color:var(--text2)">오늘 운동 없음</span></div>
+      <h3>오늘 세션 요약</h3>
+      <div id="reportSessionSummary"><span style="color:var(--text2)">아직 오늘 기록 없음</span></div>
     </div>
 
-    <div class="report-section">
+    <!-- 자전거 섹션: cycling 세션일 때만 노출 -->
+    <div class="report-section" id="reportCyclingSection" style="display:none">
       <h3>자전거</h3>
-      <div style="font-size:0.78rem;color:var(--text2);margin-bottom:8px">헬스날엔 자전거 안 타도 OK. 유산소/무산소 분리가 간섭효과 최소화.</div>
-      <div class="toggle-row">
-        <button class="toggle-btn" id="cycleYes">탔다</button>
-        <button class="toggle-btn" id="cycleNo">안탔다</button>
+      <div class="cycling-session-field" style="background:transparent;padding:0">
+        <label class="field-label">시간 (분)</label>
+        <input class="num-field" id="reportCycleMin" type="number" min="0" max="600" value="60" style="width:100px">
       </div>
-      <div class="cycling-fields" id="cyclingFields" style="display:none">
-        <label>시간 <input class="num-field" id="cycleMin" type="number" min="0" max="300" value="60" style="width:70px"> 분</label>
-        <label>강도 <input class="num-field" id="cycleInt" type="number" min="1" max="10" value="7" style="width:50px"> /10</label>
+      <div style="margin-top:10px">
+        <label class="field-label">강도 (1–10)</label>
+        <div class="slider-row">
+          <span>1</span>
+          <input type="range" id="reportCycleIntSlider" min="1" max="10" value="7">
+          <span>10</span>
+          <span class="val" id="reportCycleIntVal">7</span>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <label class="field-label">거리 km (선택)</label>
+        <input class="num-field" id="reportCycleDist" type="number" min="0" max="500" step="0.1" placeholder="—" style="width:100px">
+      </div>
+      <div style="margin-top:10px">
+        <label class="field-label">메모</label>
+        <textarea class="report-ta" id="reportCycleNote" placeholder="코스·장소·느낌…" style="min-height:60px"></textarea>
       </div>
     </div>
 
@@ -446,6 +541,11 @@
 const STORAGE_KEY = 'workoutApp_v3';
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
 const WEEKDAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+const SEED_ROUTINE_ID = 'recovery_v1';
+
+// 헬스 요일: 수(3), 목(4), 금(5)
+const GYM_DAYS = [3, 4, 5];
+
 function getTodayISO() {
   const d = new Date();
   return d.getFullYear() + '-' +
@@ -492,7 +592,7 @@ const STRETCH_DATA = [
 // ============================================================
 function makeSeedRoutine() {
   return {
-    id: "recovery_v1",
+    id: SEED_ROUTINE_ID,
     phase: "recovery",
     created_at: new Date().toISOString(),
     notes: "리서치 기반 회복기. 손목/허리 케어, 그립 0%, 요추 하중 0%, 후면 사슬 집중. 자전거 주 2-3회 유지.",
@@ -560,8 +660,8 @@ function saveData(d) {
 
 function initData() {
   let d = loadData();
+  const seed = makeSeedRoutine();
   if (!d) {
-    const seed = makeSeedRoutine();
     d = {
       meta: { version: 3, created_at: new Date().toISOString(), current_routine_id: seed.id },
       routines: { [seed.id]: seed },
@@ -572,12 +672,12 @@ function initData() {
   }
   if (!d.sessions) d.sessions = {};
   if (!d.routines) d.routines = {};
-  if (Object.keys(d.routines).length === 0) {
-    const seed = makeSeedRoutine();
-    d.routines[seed.id] = seed;
+  // 항상 시드 루틴을 최신 코드로 덮어쓰기 (사용자의 current_routine_id는 유지)
+  d.routines[SEED_ROUTINE_ID] = seed;
+  if (Object.keys(d.routines).length === 1) {
     d.meta.current_routine_id = seed.id;
-    saveData(d);
   }
+  saveData(d);
   return d;
 }
 
@@ -592,7 +692,15 @@ let timerInterval = null;
 let timerRemain = 0;
 let timerTotal = 0;
 let wakeLock = null;
-let cyclingOn = false;
+
+// 맨몸 운동 상태
+const BW_PRESETS = [
+  { id: 'pushup',  name: '푸시업',   unit: '회' },
+  { id: 'squat',   name: '스쿼트',   unit: '회' },
+  { id: 'plank',   name: '플랭크',   unit: '초' },
+  { id: 'lunge',   name: '런지',     unit: '회(좌우)' }
+];
+let bwExercises = []; // [{ id, name, unit, sets: [reps] }]
 
 // ============================================================
 //  HELPERS
@@ -609,6 +717,11 @@ function getTodayExercises() {
   const r = getCurrentRoutine();
   if (!r) return [];
   return r.days[getTodayDayKey()] || [];
+}
+
+function isGymDay(dow) {
+  dow = dow !== undefined ? dow : getTodayDOW();
+  return GYM_DAYS.indexOf(dow) !== -1;
 }
 
 function getLastSetRecord(exerciseId) {
@@ -711,44 +824,66 @@ function renderHome() {
     badge.className = 'badge badge-' + routine.phase;
   }
 
+  const dow = getTodayDOW();
+  const gymDay = isGymDay(dow);
   const todayExs = getTodayExercises();
-  const cardsEl = document.getElementById('exerciseCards');
-  cardsEl.innerHTML = '';
 
+  const exerciseCardsEl = document.getElementById('exerciseCards');
+  const restDayPanel = document.getElementById('restDayPanel');
+  const homeFooter = document.getElementById('homeFooter');
   const startBtn = document.getElementById('btnStartSession');
-  if (todayExs.length === 0) {
-    cardsEl.innerHTML = '<div id="noWorkoutMsg">오늘은 자유<br>쉼 / 자전거 / 맨몸 가볍게<br><span style="color:var(--text2);font-size:0.85rem">저녁 리포트는 🌙 버튼으로</span></div>';
-    startBtn.disabled = true;
-    startBtn.style.opacity = '0.4';
-    return;
-  }
+  const stretchBtn = document.getElementById('btnStretch');
 
-  startBtn.disabled = false;
-  startBtn.style.opacity = '1';
+  if (gymDay) {
+    // 헬스날: 운동 카드 + 스트레칭/시작 버튼
+    restDayPanel.style.display = 'none';
+    exerciseCardsEl.style.display = '';
+    homeFooter.style.display = '';
+    stretchBtn.style.display = '';
 
-  todayExs.forEach(function(item) {
-    const exInfo = routine.exercises[item.exercise_id] || {};
-    const lastSets = getLastSetRecord(item.exercise_id);
-    let prevText;
-    if (lastSets && lastSets.filter(function(s) { return s.done; }).length > 0) {
-      prevText = '이전: ' + fmtSets(lastSets);
-    } else if (item.start_weight_kg !== null) {
-      prevText = '시작 무게: ' + item.start_weight_kg + 'kg';
+    exerciseCardsEl.innerHTML = '';
+
+    if (todayExs.length === 0) {
+      exerciseCardsEl.innerHTML = '<div id="noWorkoutMsg">오늘 루틴 없음<br><span style="color:var(--text2);font-size:0.85rem">저녁 리포트는 🌙 버튼으로</span></div>';
+      startBtn.disabled = true;
+      startBtn.style.opacity = '0.4';
     } else {
-      prevText = '이전 무게 없음 — 첫 세트에서 정하자';
+      startBtn.disabled = false;
+      startBtn.style.opacity = '1';
+      todayExs.forEach(function(item) {
+        const exInfo = routine.exercises[item.exercise_id] || {};
+        const lastSets = getLastSetRecord(item.exercise_id);
+        let prevText;
+        if (lastSets && lastSets.filter(function(s) { return s.done; }).length > 0) {
+          prevText = '이전: ' + fmtSets(lastSets);
+        } else if (item.start_weight_kg !== null) {
+          prevText = '시작 무게: ' + item.start_weight_kg + 'kg';
+        } else {
+          prevText = '이전 무게 없음 — 첫 세트에서 정하자';
+        }
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML =
+          '<div class="card-title">' + (exInfo.name || item.exercise_id) + '</div>' +
+          '<div class="card-meta">' + item.sets + '세트 × ' + item.reps + '</div>' +
+          '<div class="card-prev">' + prevText + '</div>';
+        exerciseCardsEl.appendChild(card);
+      });
     }
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML =
-      '<div class="card-title">' + (exInfo.name || item.exercise_id) + '</div>' +
-      '<div class="card-meta">' + item.sets + '세트 × ' + item.reps + '</div>' +
-      '<div class="card-prev">' + prevText + '</div>';
-    cardsEl.appendChild(card);
-  });
+  } else {
+    // 비헬스날: 세션 타입 선택
+    exerciseCardsEl.style.display = 'none';
+    restDayPanel.style.display = '';
+    homeFooter.style.display = 'none';
+
+    // 월요일 특별 안내
+    const monNote = document.getElementById('monNote');
+    monNote.style.display = (dow === 1) ? '' : 'none';
+  }
 }
 
 // ============================================================
-//  SCREEN: SESSION
+//  SCREEN: SESSION (weight)
 // ============================================================
 function startSession() {
   const todayExs = getTodayExercises();
@@ -758,6 +893,7 @@ function startSession() {
     date: getTodayISO(),
     weekday: getTodayDOW(),
     routine_id: DB.meta.current_routine_id,
+    type: 'weight',
     exercises: todayExs.map(function(item) {
       return {
         exercise_id: item.exercise_id,
@@ -769,7 +905,6 @@ function startSession() {
     }),
     pain: { wrist: 0, lower_back: 0 },
     condition: 7,
-    cycling: { done: false, minutes: 0, intensity: 0 },
     meal_note: '',
     gemini_response: null,
     started_at: new Date().toISOString(),
@@ -868,6 +1003,12 @@ function doneSet() {
   const w = parseFloat(document.getElementById('wVal').dataset.val) || 0;
   const r = parseInt(document.getElementById('rVal').dataset.val) || 0;
   exEntry.sets[sessionSetIdx] = { w: w, r: r, done: true };
+
+  // 자동 extra_sets 증가: 마지막 세트 완료 후 다음 세트 진행 시
+  const completedCount = exEntry.sets.filter(function(s) { return s && s.done; }).length;
+  if (completedCount > exEntry.plan_sets + exEntry.extra_sets) {
+    exEntry.extra_sets++;
+  }
 
   const totalSets = exEntry.plan_sets + exEntry.extra_sets;
   const routine = getCurrentRoutine();
@@ -992,6 +1133,217 @@ function stopTimer() {
 }
 
 // ============================================================
+//  SCREEN: CYCLING SESSION
+// ============================================================
+function startCyclingSession() {
+  // 기존 cycling 세션 데이터가 있으면 복원
+  const existing = DB.sessions[getTodayISO()];
+  const cy = (existing && existing.type === 'cycling' && existing.cycling) ? existing.cycling : null;
+  document.getElementById('cyclingMin').value = cy ? (cy.minutes || 60) : 60;
+  document.getElementById('cyclingIntSlider').value = cy ? (cy.intensity || 7) : 7;
+  document.getElementById('cyclingIntVal').textContent = cy ? (cy.intensity || 7) : 7;
+  document.getElementById('cyclingDist').value = cy ? (cy.distance_km || '') : '';
+  document.getElementById('cyclingNote').value = cy ? (cy.note || '') : '';
+  showScreen('screenCycling');
+}
+
+function saveCyclingSession() {
+  const minutes = parseInt(document.getElementById('cyclingMin').value) || 0;
+  const intensity = parseInt(document.getElementById('cyclingIntSlider').value) || 7;
+  const distVal = document.getElementById('cyclingDist').value;
+  const distance_km = distVal ? parseFloat(distVal) : null;
+  const note = document.getElementById('cyclingNote').value.trim();
+
+  let session = DB.sessions[getTodayISO()];
+  if (!session) {
+    session = {
+      date: getTodayISO(),
+      weekday: getTodayDOW(),
+      routine_id: DB.meta.current_routine_id,
+      type: 'cycling',
+      exercises: [],
+      cycling: {},
+      pain: {},
+      condition: 7,
+      meal_note: '',
+      gemini_response: null,
+      started_at: new Date().toISOString(),
+      ended_at: new Date().toISOString()
+    };
+  }
+  session.type = 'cycling';
+  session.cycling = { minutes, intensity, distance_km, note };
+  session.ended_at = new Date().toISOString();
+  DB.sessions[getTodayISO()] = session;
+  saveData(DB);
+  toast('자전거 세션 저장됨');
+  showScreen('screenReport');
+  renderReport();
+}
+
+// ============================================================
+//  SCREEN: BODYWEIGHT SESSION
+// ============================================================
+function initBwExercises() {
+  bwExercises = BW_PRESETS.map(function(p) {
+    return { id: p.id, name: p.name, unit: p.unit, sets: [0] };
+  });
+}
+
+function renderBwExercises() {
+  const container = document.getElementById('bwExerciseList');
+  container.innerHTML = '';
+  bwExercises.forEach(function(ex, exIdx) {
+    const card = document.createElement('div');
+    card.className = 'bw-exercise-card';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'bw-exercise-title';
+    titleRow.innerHTML = '<span>' + esc(ex.name) + ' <span style="font-size:0.75rem;color:var(--text2)">(' + esc(ex.unit) + ')</span></span>';
+    const delExBtn = document.createElement('button');
+    delExBtn.className = 'bw-del-ex-btn';
+    delExBtn.textContent = '✕';
+    delExBtn.addEventListener('click', function() {
+      bwExercises.splice(exIdx, 1);
+      renderBwExercises();
+    });
+    titleRow.appendChild(delExBtn);
+    card.appendChild(titleRow);
+
+    const setsDiv = document.createElement('div');
+    setsDiv.className = 'bw-sets';
+    ex.sets.forEach(function(reps, setIdx) {
+      const row = document.createElement('div');
+      row.className = 'bw-set-row';
+      const lbl = document.createElement('span');
+      lbl.textContent = '세트' + (setIdx + 1);
+      const inp = document.createElement('input');
+      inp.type = 'number';
+      inp.className = 'bw-reps';
+      inp.min = 0;
+      inp.max = 9999;
+      inp.value = reps || '';
+      inp.placeholder = '—';
+      inp.addEventListener('input', function() {
+        bwExercises[exIdx].sets[setIdx] = parseInt(this.value) || 0;
+      });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'bw-del-set-btn';
+      delBtn.textContent = '✕';
+      delBtn.addEventListener('click', function() {
+        if (bwExercises[exIdx].sets.length <= 1) return;
+        bwExercises[exIdx].sets.splice(setIdx, 1);
+        renderBwExercises();
+      });
+      row.appendChild(lbl);
+      row.appendChild(inp);
+      row.appendChild(delBtn);
+      setsDiv.appendChild(row);
+    });
+
+    const addSetBtn = document.createElement('button');
+    addSetBtn.className = 'bw-add-set-btn';
+    addSetBtn.textContent = '+ 세트';
+    addSetBtn.addEventListener('click', function() {
+      bwExercises[exIdx].sets.push(0);
+      renderBwExercises();
+    });
+
+    card.appendChild(setsDiv);
+    card.appendChild(addSetBtn);
+    container.appendChild(card);
+  });
+}
+
+function startBodyweightSession() {
+  // 기존 bodyweight 세션이 있으면 복원
+  const existing = DB.sessions[getTodayISO()];
+  if (existing && existing.type === 'bodyweight' && existing.bodyweight && existing.bodyweight.length > 0) {
+    bwExercises = existing.bodyweight.map(function(ex) {
+      return {
+        id: ex.name.replace(/\s/g,'_').toLowerCase(),
+        name: ex.name,
+        unit: '회',
+        sets: ex.sets.map(function(s) { return s.reps || 0; })
+      };
+    });
+  } else {
+    initBwExercises();
+  }
+  renderBwExercises();
+  showScreen('screenBodyweight');
+}
+
+function saveBodyweightSession() {
+  const bwData = bwExercises.map(function(ex) {
+    return {
+      name: ex.name,
+      sets: ex.sets.map(function(r) { return { reps: r, done: true }; })
+    };
+  }).filter(function(ex) {
+    return ex.sets.some(function(s) { return s.reps > 0; });
+  });
+
+  let session = DB.sessions[getTodayISO()];
+  if (!session) {
+    session = {
+      date: getTodayISO(),
+      weekday: getTodayDOW(),
+      routine_id: DB.meta.current_routine_id,
+      type: 'bodyweight',
+      exercises: [],
+      bodyweight: [],
+      pain: {},
+      condition: 7,
+      meal_note: '',
+      gemini_response: null,
+      started_at: new Date().toISOString(),
+      ended_at: new Date().toISOString()
+    };
+  }
+  session.type = 'bodyweight';
+  session.bodyweight = bwData;
+  session.ended_at = new Date().toISOString();
+  DB.sessions[getTodayISO()] = session;
+  saveData(DB);
+  toast('맨몸 세션 저장됨');
+  showScreen('screenReport');
+  renderReport();
+}
+
+// ============================================================
+//  REST SESSION
+// ============================================================
+function saveRestSession() {
+  if (!confirm('오늘 휴식으로 기록할까?')) return;
+
+  let session = DB.sessions[getTodayISO()];
+  if (!session) {
+    session = {
+      date: getTodayISO(),
+      weekday: getTodayDOW(),
+      routine_id: DB.meta.current_routine_id,
+      type: 'rest',
+      exercises: [],
+      pain: {},
+      condition: 7,
+      meal_note: '',
+      gemini_response: null,
+      started_at: new Date().toISOString(),
+      ended_at: new Date().toISOString()
+    };
+  } else {
+    session.type = 'rest';
+    session.ended_at = new Date().toISOString();
+  }
+  DB.sessions[getTodayISO()] = session;
+  saveData(DB);
+  toast('휴식 기록됨');
+  showScreen('screenReport');
+  renderReport();
+}
+
+// ============================================================
 //  SCREEN: REPORT
 // ============================================================
 function renderReport() {
@@ -999,47 +1351,73 @@ function renderReport() {
 
   const session = DB.sessions[getTodayISO()];
   const sumEl = document.getElementById('reportSessionSummary');
-  if (session && session.exercises && session.exercises.length > 0) {
-    const routine = getCurrentRoutine();
-    let html = '';
-    session.exercises.forEach(function(ex) {
-      const exInfo = routine.exercises[ex.exercise_id] || {};
-      const name = exInfo.name || ex.exercise_id;
-      const done = (ex.sets || []).filter(function(s) { return s.done; });
-      if (done.length > 0) {
-        html += '<div class="session-line">' + esc(name) + ': ' + done.map(function(s) { return esc(s.w) + 'kg\xd7' + esc(s.r); }).join(' / ') + '</div>';
-      }
-    });
-    sumEl.innerHTML = html || '<span style="color:var(--text2)">완료된 세트 없음</span>';
+
+  // 세션 타입별 요약
+  if (!session) {
+    sumEl.innerHTML = '<span style="color:var(--text2)">아직 오늘 기록 없음</span>';
   } else {
-    sumEl.innerHTML = '<span style="color:var(--text2)">오늘 운동 없음</span>';
+    const t = session.type || (session.exercises && session.exercises.length > 0 ? 'weight' : null);
+    if (t === 'weight') {
+      const routine = getCurrentRoutine();
+      let html = '';
+      (session.exercises || []).forEach(function(ex) {
+        const exInfo = routine.exercises[ex.exercise_id] || {};
+        const name = exInfo.name || ex.exercise_id;
+        const done = (ex.sets || []).filter(function(s) { return s.done; });
+        if (done.length > 0) {
+          html += '<div class="session-line">' + esc(name) + ': ' + done.map(function(s) { return esc(s.w) + 'kg\xd7' + esc(s.r); }).join(' / ') + '</div>';
+        }
+      });
+      sumEl.innerHTML = html || '<span style="color:var(--text2)">완료된 세트 없음</span>';
+    } else if (t === 'cycling') {
+      const cy = session.cycling || {};
+      let html = '<div class="session-line">🚴 자전거 ' + (cy.minutes || 0) + '분, 강도 ' + (cy.intensity || '—') + '/10';
+      if (cy.distance_km) html += ', ' + cy.distance_km + 'km';
+      html += '</div>';
+      if (cy.note) html += '<div class="session-line" style="color:var(--text2)">' + esc(cy.note) + '</div>';
+      sumEl.innerHTML = html;
+    } else if (t === 'bodyweight') {
+      const bw = session.bodyweight || [];
+      let html = '';
+      bw.forEach(function(ex) {
+        const setStr = ex.sets.map(function(s, i) { return (i + 1) + '세트×' + s.reps; }).join(', ');
+        html += '<div class="session-line">💪 ' + esc(ex.name) + ': ' + setStr + '</div>';
+      });
+      sumEl.innerHTML = html || '<div class="session-line">💪 맨몸 운동 (세트 기록 없음)</div>';
+    } else if (t === 'rest') {
+      sumEl.innerHTML = '<div class="session-line">😴 휴식</div>';
+    } else {
+      sumEl.innerHTML = '<span style="color:var(--text2)">아직 오늘 기록 없음</span>';
+    }
   }
 
-  // Pre-fill from existing session
+  // 자전거 섹션: cycling 세션일 때만 노출
+  const sessionType = session ? (session.type || null) : null;
+  const cyclingSection = document.getElementById('reportCyclingSection');
+  if (sessionType === 'cycling') {
+    cyclingSection.style.display = '';
+    const cy = session.cycling || {};
+    document.getElementById('reportCycleMin').value = cy.minutes || 60;
+    document.getElementById('reportCycleIntSlider').value = cy.intensity || 7;
+    document.getElementById('reportCycleIntVal').textContent = cy.intensity || 7;
+    document.getElementById('reportCycleDist').value = cy.distance_km != null ? cy.distance_km : '';
+    document.getElementById('reportCycleNote').value = cy.note || '';
+  } else {
+    cyclingSection.style.display = 'none';
+  }
+
+  // 공통 필드
   if (session) {
-    if (session.cycling && session.cycling.done) {
-      setCycling(true);
-      document.getElementById('cycleMin').value = session.cycling.minutes || 60;
-      document.getElementById('cycleInt').value = session.cycling.intensity || 7;
-    } else {
-      setCycling(false);
-    }
     document.getElementById('mealNote').value = session.meal_note || '';
     const cond = session.condition || 7;
     document.getElementById('conditionSlider').value = cond;
     document.getElementById('conditionVal').textContent = cond;
     if (session.gemini_response) {
       document.getElementById('geminiPaste').value = session.gemini_response;
+    } else {
+      document.getElementById('geminiPaste').value = '';
     }
   } else {
-    // day-of-week cycling default: wed/thu/fri (헬스날) → off; sat/sun/mon/tue → on
-    const gymDays = [3, 4, 5]; // 수목금
-    const isGymDay = gymDays.indexOf(getTodayDOW()) !== -1;
-    setCycling(!isGymDay);
-    if (!isGymDay) {
-      document.getElementById('cycleMin').value = 60;
-      document.getElementById('cycleInt').value = 7;
-    }
     document.getElementById('mealNote').value = '';
     document.getElementById('conditionSlider').value = 7;
     document.getElementById('conditionVal').textContent = 7;
@@ -1093,13 +1471,6 @@ function collectPainData() {
   return pain;
 }
 
-function setCycling(on) {
-  cyclingOn = on;
-  document.getElementById('cycleYes').classList.toggle('active', on);
-  document.getElementById('cycleNo').classList.toggle('active', !on);
-  document.getElementById('cyclingFields').style.display = on ? '' : 'none';
-}
-
 function saveReport() {
   let session = DB.sessions[getTodayISO()];
   if (!session) {
@@ -1107,10 +1478,10 @@ function saveReport() {
       date: getTodayISO(),
       weekday: getTodayDOW(),
       routine_id: DB.meta.current_routine_id,
+      type: null,
       exercises: [],
       pain: {},
       condition: 7,
-      cycling: { done: false, minutes: 0, intensity: 0 },
       meal_note: '',
       gemini_response: null,
       started_at: null,
@@ -1119,11 +1490,17 @@ function saveReport() {
   }
   session.condition = parseInt(document.getElementById('conditionSlider').value);
   session.meal_note = document.getElementById('mealNote').value.trim();
-  session.cycling = {
-    done: cyclingOn,
-    minutes: cyclingOn ? parseInt(document.getElementById('cycleMin').value) || 0 : 0,
-    intensity: cyclingOn ? parseInt(document.getElementById('cycleInt').value) || 0 : 0
-  };
+
+  // cycling 섹션 편집 (cycling 세션일 때만)
+  if (session.type === 'cycling') {
+    session.cycling = {
+      minutes: parseInt(document.getElementById('reportCycleMin').value) || 0,
+      intensity: parseInt(document.getElementById('reportCycleIntSlider').value) || 7,
+      distance_km: parseFloat(document.getElementById('reportCycleDist').value) || null,
+      note: document.getElementById('reportCycleNote').value.trim()
+    };
+  }
+
   session.pain = collectPainData();
   const geminiText = document.getElementById('geminiPaste').value.trim();
   if (geminiText) session.gemini_response = geminiText;
@@ -1145,30 +1522,70 @@ function buildGeminiPrompt() {
     .slice(0, 7);
 
   const recentBlock = recent7.map(function(s) {
-    const exSummary = (s.exercises || []).map(function(ex) {
-      const exInfo = routine.exercises[ex.exercise_id] || {};
-      const done = (ex.sets || []).filter(function(ss) { return ss.done; });
-      return '  - ' + (exInfo.name || ex.exercise_id) + ': ' + (done.length > 0 ? done.map(function(ss) { return ss.w + '\xd7' + ss.r; }).join('/') : '—');
-    }).join('\n');
+    const t = s.type || (s.exercises && s.exercises.length > 0 ? 'weight' : null);
+    let typeTag = '';
+    if (t === 'weight') typeTag = '[웨이트]';
+    else if (t === 'cycling') typeTag = '[자전거]';
+    else if (t === 'bodyweight') typeTag = '[맨몸]';
+    else if (t === 'rest') typeTag = '[휴식]';
+    else typeTag = '[기록]';
+
+    let exSummary = '';
+    if (t === 'weight') {
+      exSummary = (s.exercises || []).map(function(ex) {
+        const exInfo = routine.exercises[ex.exercise_id] || {};
+        const done = (ex.sets || []).filter(function(ss) { return ss.done; });
+        return '  - ' + (exInfo.name || ex.exercise_id) + ': ' + (done.length > 0 ? done.map(function(ss) { return ss.w + '\xd7' + ss.r; }).join('/') : '—');
+      }).join('\n');
+    } else if (t === 'cycling') {
+      const cy = s.cycling || {};
+      exSummary = '  - 자전거 ' + (cy.minutes || 0) + '분 강도' + (cy.intensity || '—') + '/10' + (cy.distance_km ? ' ' + cy.distance_km + 'km' : '');
+    } else if (t === 'bodyweight') {
+      const bw = s.bodyweight || [];
+      exSummary = bw.map(function(ex) {
+        return '  - ' + ex.name + ': ' + ex.sets.map(function(ss) { return ss.reps; }).join('/') + '회';
+      }).join('\n');
+    } else if (t === 'rest') {
+      exSummary = '  - 휴식';
+    }
+
     const p = s.pain ? Object.entries(s.pain).map(function(e) { return e[0] + '=' + e[1]; }).join(', ') : '—';
-    return '[' + s.date + '] 컨디션' + (s.condition || '?') + '/10, 통증: ' + p + '\n' + (exSummary || '  운동 없음');
+    return '[' + s.date + '] ' + typeTag + ' 컨디션' + (s.condition || '?') + '/10, 통증: ' + p + '\n' + (exSummary || '  운동 없음');
   }).join('\n\n') || '없음';
 
+  // 오늘 세션 요약
   let todayExStr = '운동 없음';
-  if (session && session.exercises && session.exercises.length > 0) {
-    todayExStr = session.exercises.map(function(ex) {
-      const exInfo = routine.exercises[ex.exercise_id] || {};
-      const done = (ex.sets || []).filter(function(s) { return s.done; });
-      return (exInfo.name || ex.exercise_id) + ': ' + (done.length > 0 ? done.map(function(s) { return s.w + '\xd7' + s.r; }).join('/') : '—');
-    }).join('\n');
+  let todayTypeTag = '';
+  if (session) {
+    const t = session.type || (session.exercises && session.exercises.length > 0 ? 'weight' : null);
+    if (t === 'weight') {
+      todayTypeTag = '[웨이트]';
+      if (session.exercises && session.exercises.length > 0) {
+        todayExStr = session.exercises.map(function(ex) {
+          const exInfo = routine.exercises[ex.exercise_id] || {};
+          const done = (ex.sets || []).filter(function(s) { return s.done; });
+          return (exInfo.name || ex.exercise_id) + ': ' + (done.length > 0 ? done.map(function(s) { return s.w + '\xd7' + s.r; }).join('/') : '—');
+        }).join('\n');
+      }
+    } else if (t === 'cycling') {
+      todayTypeTag = '[자전거]';
+      const cy = session.cycling || {};
+      todayExStr = '자전거 ' + (cy.minutes || 0) + '분 강도' + (cy.intensity || '—') + '/10' + (cy.distance_km ? ' ' + cy.distance_km + 'km' : '');
+    } else if (t === 'bodyweight') {
+      todayTypeTag = '[맨몸]';
+      const bw = session.bodyweight || [];
+      todayExStr = bw.map(function(ex) {
+        return ex.name + ': ' + ex.sets.map(function(s) { return s.reps; }).join('/') + '회';
+      }).join('\n') || '맨몸 운동';
+    } else if (t === 'rest') {
+      todayTypeTag = '[휴식]';
+      todayExStr = '휴식';
+    }
   }
 
   const pain = session ? (session.pain || {}) : {};
   const painStr = Object.entries(pain).map(function(e) { return e[0] + '=' + e[1]; }).join(', ') || '없음';
   const cond = session ? (session.condition || 7) : 7;
-  const cycleStr = (session && session.cycling && session.cycling.done)
-    ? session.cycling.minutes + '분, 강도' + session.cycling.intensity + '/10'
-    : '안탔음';
   const meal = session ? (session.meal_note || '기록 없음') : '기록 없음';
 
   return `나는 168cm 71kg 초보자 남성. 5월 1차 노무사 시험 준비 중. 자전거 주 2-3회 고강도.
@@ -1178,14 +1595,13 @@ function buildGeminiPrompt() {
 현재 루틴: ${routine.id} (phase: ${routine.phase})
 현재 통증: ${painStr}
 
-최근 7일 세션:
+최근 7일 세션 (태그: [웨이트]/[자전거]/[맨몸]/[휴식]):
 ${recentBlock}
 
-오늘 (${getTodayISO()}):
+오늘 (${getTodayISO()}) ${todayTypeTag}:
 - 운동:
 ${todayExStr}
 - 컨디션: ${cond}/10
-- 자전거: ${cycleStr}
 - 식사: ${meal}
 
 요청:
@@ -1262,8 +1678,8 @@ function applyParsedRoutine(obj, geminiText) {
     if (!DB.sessions[getTodayISO()]) {
       DB.sessions[getTodayISO()] = {
         date: getTodayISO(), weekday: getTodayDOW(), routine_id: obj.id,
+        type: null,
         exercises: [], pain: {}, condition: 7,
-        cycling: { done: false, minutes: 0, intensity: 0 },
         meal_note: '', gemini_response: geminiText,
         started_at: null, ended_at: null
       };
@@ -1371,8 +1787,8 @@ function savePainModal() {
     session = {
       date: getTodayISO(), weekday: getTodayDOW(),
       routine_id: DB.meta.current_routine_id,
+      type: null,
       exercises: [], pain: {}, condition: 7,
-      cycling: { done: false, minutes: 0, intensity: 0 },
       meal_note: '', gemini_response: null,
       started_at: null, ended_at: null
     };
@@ -1447,6 +1863,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('conditionVal').textContent = this.value;
   });
 
+  // reportCycleIntSlider live update
+  document.getElementById('reportCycleIntSlider').addEventListener('input', function() {
+    document.getElementById('reportCycleIntVal').textContent = this.value;
+  });
+
+  // cyclingIntSlider live update
+  document.getElementById('cyclingIntSlider').addEventListener('input', function() {
+    document.getElementById('cyclingIntVal').textContent = this.value;
+  });
+
   // Home
   document.getElementById('btnEvening').addEventListener('click', function() {
     renderReport();
@@ -1459,6 +1885,35 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('phaseBadge').addEventListener('click', function() {
     renderPainModal();
     document.getElementById('painModal').classList.add('open');
+  });
+
+  // 비헬스날 세션 타입 버튼
+  document.getElementById('btnStartCycling').addEventListener('click', startCyclingSession);
+  document.getElementById('btnStartBodyweight').addEventListener('click', startBodyweightSession);
+  document.getElementById('btnStartRest').addEventListener('click', saveRestSession);
+
+  // 자전거 세션
+  document.getElementById('btnCyclingBack').addEventListener('click', function() {
+    showScreen('screenHome');
+  });
+  document.getElementById('btnCyclingCancel').addEventListener('click', function() {
+    showScreen('screenHome');
+  });
+  document.getElementById('btnCyclingSave').addEventListener('click', saveCyclingSession);
+
+  // 맨몸 세션
+  document.getElementById('btnBodyweightBack').addEventListener('click', function() {
+    showScreen('screenHome');
+  });
+  document.getElementById('btnBodyweightCancel').addEventListener('click', function() {
+    showScreen('screenHome');
+  });
+  document.getElementById('btnBodyweightSave').addEventListener('click', saveBodyweightSession);
+  document.getElementById('btnAddBwExercise').addEventListener('click', function() {
+    const name = prompt('운동 이름');
+    if (!name) return;
+    bwExercises.push({ id: name.replace(/\s/g,'_').toLowerCase(), name: name, unit: '회', sets: [0] });
+    renderBwExercises();
   });
 
   // Session
@@ -1476,17 +1931,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   document.getElementById('stretchHintToggle').addEventListener('click', function() {
     document.getElementById('stretchHintDetail').classList.toggle('open');
-  });
-  document.getElementById('btnAddSet').addEventListener('click', function() {
-    if (!currentSession) return;
-    const exEntry = currentSession.exercises[sessionExIdx];
-    if (!exEntry) return;
-    exEntry.extra_sets++;
-    // move setIdx to this new set
-    sessionSetIdx = exEntry.plan_sets + exEntry.extra_sets - 1;
-    const totalSets = exEntry.plan_sets + exEntry.extra_sets;
-    document.getElementById('setLabel').textContent = '세트 ' + (sessionSetIdx + 1) + ' / ' + totalSets;
-    renderSetChips(exEntry);
   });
   document.getElementById('btnRemoveSet').addEventListener('click', function() {
     if (!currentSession) return;
@@ -1536,8 +1980,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const key = label.replace(/\s/g,'_').toLowerCase();
     addPainRow(document.getElementById('painRows'), key, label, 0);
   });
-  document.getElementById('cycleYes').addEventListener('click', function() { setCycling(true); });
-  document.getElementById('cycleNo').addEventListener('click', function() { setCycling(false); });
   document.getElementById('btnGoRoutines').addEventListener('click', function() {
     renderRoutines();
     showScreen('screenRoutines');
