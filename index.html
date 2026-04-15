@@ -86,6 +86,45 @@
   .rest-day-buttons button { flex: 1; padding: 18px 8px; font-size: 0.9rem; }
   .rest-day-note { font-size: 0.82rem; color: var(--warn); text-align: center; margin-bottom: 12px; padding: 10px 14px; background: var(--bg3); border-radius: 10px; }
 
+  /* 빈 상태 홈 패널 */
+  #emptyRoutinePanel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px 20px;
+    gap: 16px;
+  }
+  #emptyRoutinePanel .empty-icon { font-size: 2.5rem; }
+  #emptyRoutinePanel .empty-title { font-size: 1.1rem; font-weight: 700; }
+  #emptyRoutinePanel .empty-desc { font-size: 0.9rem; color: var(--text2); line-height: 1.7; }
+  #emptyRoutinePanel .empty-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 320px; }
+  #emptyRoutinePanel .empty-note { font-size: 0.78rem; color: var(--text2); line-height: 1.7; background: var(--bg3); border-radius: 10px; padding: 12px 14px; width: 100%; max-width: 320px; text-align: left; }
+
+  /* 루틴 붙여넣기 모달 */
+  #pasteRoutineModal {
+    display: none;
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.6);
+    align-items: flex-end;
+  }
+  #pasteRoutineModal.open { display: flex; }
+  #pasteRoutineModalBox {
+    background: var(--bg2);
+    border-radius: var(--radius) var(--radius) 0 0;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #pasteRoutineModalBox textarea { min-height: 200px; }
+  #pasteModalResult { font-size: 0.85rem; display: none; }
+  #pasteModalResult.ok { color: var(--success); }
+  #pasteModalResult.err { color: var(--danger); }
+
   /* --- 세션 --- */
   #sessionProgress {
     background: var(--bg3);
@@ -306,6 +345,20 @@
     </div>
   </header>
   <div class="scroll-body" id="homeBody">
+    <!-- 루틴 없음: 빈 상태 -->
+    <div id="emptyRoutinePanel">
+      <div class="empty-icon">🤖</div>
+      <div class="empty-title">아직 루틴이 없습니다</div>
+      <div class="empty-desc">Gemini와 함께 네 상황에 맞는 루틴을 만들자.</div>
+      <div class="empty-buttons">
+        <button class="btn-primary" id="btnGetFirstRoutine">🤖 Gemini로 첫 루틴 받기</button>
+        <button class="btn-secondary" id="btnPasteRoutine">📥 이미 루틴 JSON 있음? 붙여넣기</button>
+      </div>
+      <div class="empty-note">
+        * 루틴은 Gemini 응답의 JSON 코드블록을 그대로 붙여넣으면 적용됨.<br>
+        * 기존 시드 루틴은 상의 없이 주입된 것이라 제거했습니다.
+      </div>
+    </div>
     <!-- 헬스날: 운동 카드 -->
     <div id="exerciseCards"></div>
     <!-- 비헬스날: 세션 타입 선택 -->
@@ -322,7 +375,7 @@
     <button class="btn-secondary" id="btnStretch">🧘 스트레칭</button>
     <button class="btn-primary" id="btnStartSession">▶ 시작</button>
   </div>
-  <div id="versionFooter">workout v4.5</div>
+  <div id="versionFooter">workout v4.6</div>
 </div>
 
 <!-- ===== 세션 진행 ===== -->
@@ -559,6 +612,22 @@
   </div>
 </div>
 
+<!-- ===== 루틴 붙여넣기 모달 ===== -->
+<div id="pasteRoutineModal">
+  <div id="pasteRoutineModalBox">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="font-size:1.1rem">루틴 JSON 붙여넣기</h2>
+      <button class="btn-icon" id="btnClosePasteModal">✕</button>
+    </div>
+    <textarea class="report-ta" id="pasteRoutineInput" placeholder="Gemini 응답 전체 또는 JSON 코드블록을 붙여넣으세요…"></textarea>
+    <div id="pasteModalResult"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-secondary" id="btnCancelPasteModal">취소</button>
+      <button class="btn-primary" id="btnApplyPastedRoutine">파싱 &amp; 적용</button>
+    </div>
+  </div>
+</div>
+
 <!-- toast -->
 <div id="toast"></div>
 
@@ -569,7 +638,61 @@
 const STORAGE_KEY = 'workoutApp_v3';
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
 const WEEKDAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
-const SEED_ROUTINE_ID = 'recovery_v1';
+
+const INITIAL_GEMINI_PROMPT = `나는 168cm 71kg 초보자 남성. 2026년 5월 초 노무사 1차 시험 준비 중.
+주 2-3회 고강도 자전거(토·일·월·화 위주). 주 3일 웨이트(수·목·금).
+
+현재 상황:
+- 왼쪽 손목 굴곡 통증 약간 (건초염 의심, 그립 시 불편)
+- 하부 요추·장요근 뻐근함 (자전거 엎드린 에어로 자세 영향)
+- 3대 220kg (스쿼트 80 / 벤치 60 / 데드 80) — 회복되면 재진입 목표
+- 지금은 회복기 필요
+
+목표:
+1. 손목·허리 회복 (그립 0%·수직 척추 압박 0% 원칙)
+2. 자전거 편향 교정 (대퇴사두 과사용 + 장요근 단축 + 라운드숄더)
+3. 5월 시험까지 뇌 포도당/코르티솔 방어 (적자 금지, 린 매스업)
+4. 여름(6-7월) 외형 재조성 (팔·복근·어깨)
+
+제약:
+- 벤치/스쿼트/데드/밀리터리 프레스 일시 제외
+- 손목 커프, 전완 패드 머신, 케이블 위주
+- 각 세션 30분~2시간 가용
+- 단백질 114g+/일 목표 (영양은 별도 관리)
+- 음주: 일/토만 OK, 수목금화 금지
+
+요청:
+1. 2주간의 회복기 루틴 (수·목·금)
+2. 반드시 아래 JSON 코드블록 형식으로 응답:
+
+\`\`\`json
+{
+  "id": "recovery_gemini_v1",
+  "phase": "recovery",
+  "notes": "설명...",
+  "pain_rules": {
+    "return_to_main_lifts_when": "손목<=1 AND 허리<=1 이 2세션 연속",
+    "main_lifts_start_weight_pct": 50
+  },
+  "exercises": {
+    "<ex_id>": {
+      "name": "운동 한글명",
+      "rest_s": 90,
+      "intra_stretch": { "name": "스트레칭명", "seconds": 15, "details": ["단계1", "단계2", "⚠ 주의"] }
+    }
+  },
+  "days": {
+    "mon": [], "tue": [],
+    "wed": [ { "exercise_id": "<ex_id>", "sets": 4, "reps": "12-15", "start_weight_kg": null } ],
+    "thu": [...], "fri": [...], "sat": [], "sun": []
+  }
+}
+\`\`\`
+
+주의:
+- intra_stretch.details 는 통증 부위 케어용 단계별 설명 (배열, 각 원소 1줄).
+- exercises 카탈로그에 없는 ex_id를 days에 쓰지 말 것.
+- rest_s=0은 스트레칭류, rest_s>=60 권장.`;
 
 // 헬스 요일: 수(3), 목(4), 금(5)
 const GYM_DAYS = [3, 4, 5];
@@ -616,58 +739,6 @@ const STRETCH_DATA = [
 ];
 
 // ============================================================
-//  SEED ROUTINE
-// ============================================================
-function makeSeedRoutine() {
-  return {
-    id: SEED_ROUTINE_ID,
-    phase: "recovery",
-    created_at: new Date().toISOString(),
-    notes: "리서치 기반 회복기. 손목/허리 케어, 그립 0%, 요추 하중 0%, 후면 사슬 집중. 자전거 주 2-3회 유지.",
-    pain_rules: {
-      return_to_main_lifts_when: "손목<=1 AND 허리<=1 이 2세션 연속",
-      main_lifts_start_weight_pct: 50
-    },
-    exercises: {
-      "pec_deck":           { name: "머신 펙덱 플라이 (전완 패드)", rest_s: 90 },
-      "supine_punchout":    { name: "수파인 펀치아웃 (손목 커프)", rest_s: 60, intra_stretch: { name: "손목 굴곡/신전", seconds: 15, details: ["한 손 팔 앞으로 펴고 반대 손으로 손가락 아래로 당김 (굴곡) 15초", "반대로 손등을 위로 당김 (신전) 15초", "⚠ 통증 2/10 이상 시 즉시 중단"] } },
-      "cable_row_cuff":     { name: "케이블 시티드 로우 (손목 커프)", rest_s: 90 },
-      "cable_lateral_cuff": { name: "케이블 래터럴 레이즈 (커프)", rest_s: 60 },
-      "face_pull_cuff":     { name: "케이블 페이스 풀 (커프)", rest_s: 60 },
-      "cable_pushdown_cuff":{ name: "케이블 푸시다운 (커프)", rest_s: 60, intra_stretch: { name: "손목 굴곡/신전", seconds: 15, details: ["한 손 팔 앞으로 펴고 반대 손으로 손가락 아래로 당김 (굴곡) 15초", "반대로 손등을 위로 당김 (신전) 15초", "⚠ 통증 2/10 이상 시 즉시 중단"] } },
-      "cable_curl_cuff":    { name: "케이블 바이셉스 컬 (커프)", rest_s: 60 },
-      "hip_thrust":         { name: "바벨/머신 힙쓰러스트", rest_s: 120, intra_stretch: { name: "장요근 스트레칭 60s", seconds: 60, details: ["한쪽 무릎 꿇기, 반대 발 앞으로 (런지 자세)", "골반 후방경사 유지하며 앞으로 체중 이동", "앞허벅지·사타구니 당기는 느낌. 60초, 좌우 교대", "⚠ 허리 과신전 X, 골반 말린 상태 유지"] } },
-      "lying_leg_curl":     { name: "라잉 레그 컬", rest_s: 90 },
-      "rkc_plank":          { name: "RKC 프론트 플랭크", rest_s: 60 },
-      "psoas_stretch":      { name: "장요근 정적 스트레칭 (Lifted Hip Flexor)", rest_s: 0 }
-    },
-    days: {
-      mon: [],
-      tue: [],
-      wed: [
-        { exercise_id: "pec_deck",        sets: 4, reps: "12-15", start_weight_kg: null },
-        { exercise_id: "cable_row_cuff",  sets: 4, reps: "10-12", start_weight_kg: null },
-        { exercise_id: "supine_punchout", sets: 3, reps: "15",    start_weight_kg: null }
-      ],
-      thu: [
-        { exercise_id: "cable_lateral_cuff",  sets: 4, reps: "15",    start_weight_kg: null },
-        { exercise_id: "face_pull_cuff",      sets: 4, reps: "12-15", start_weight_kg: null },
-        { exercise_id: "cable_pushdown_cuff", sets: 3, reps: "15",    start_weight_kg: null },
-        { exercise_id: "cable_curl_cuff",     sets: 3, reps: "15",    start_weight_kg: null }
-      ],
-      fri: [
-        { exercise_id: "psoas_stretch",  sets: 2, reps: "60s",   start_weight_kg: null },
-        { exercise_id: "hip_thrust",     sets: 4, reps: "10-12", start_weight_kg: 40 },
-        { exercise_id: "lying_leg_curl", sets: 4, reps: "12-15", start_weight_kg: null },
-        { exercise_id: "rkc_plank",      sets: 3, reps: "max",   start_weight_kg: null }
-      ],
-      sat: [],
-      sun: []
-    }
-  };
-}
-
-// ============================================================
 //  STORAGE
 // ============================================================
 function loadData() {
@@ -688,11 +759,10 @@ function saveData(d) {
 
 function initData() {
   let d = loadData();
-  const seed = makeSeedRoutine();
   if (!d) {
     d = {
-      meta: { version: 3, created_at: new Date().toISOString(), current_routine_id: seed.id },
-      routines: { [seed.id]: seed },
+      meta: { version: 3, created_at: new Date().toISOString(), current_routine_id: null },
+      routines: {},
       sessions: {}
     };
     saveData(d);
@@ -700,10 +770,11 @@ function initData() {
   }
   if (!d.sessions) d.sessions = {};
   if (!d.routines) d.routines = {};
-  // 항상 시드 루틴을 최신 코드로 덮어쓰기 (사용자의 current_routine_id는 유지)
-  d.routines[SEED_ROUTINE_ID] = seed;
-  if (Object.keys(d.routines).length === 1) {
-    d.meta.current_routine_id = seed.id;
+  // 기존 recovery_v1 시드 루틴 한 번만 제거 (마이그레이션)
+  if (!d.meta.purged_seed_v1) {
+    if (d.routines && d.routines.recovery_v1) delete d.routines.recovery_v1;
+    if (d.meta.current_routine_id === 'recovery_v1') d.meta.current_routine_id = null;
+    d.meta.purged_seed_v1 = true;
   }
   saveData(d);
   return d;
@@ -734,7 +805,8 @@ let bwExercises = []; // [{ id, name, unit, sets: [reps] }]
 //  HELPERS
 // ============================================================
 function getCurrentRoutine() {
-  return DB.routines[DB.meta.current_routine_id] || Object.values(DB.routines)[0];
+  if (!DB.meta.current_routine_id) return Object.values(DB.routines)[0] || null;
+  return DB.routines[DB.meta.current_routine_id] || Object.values(DB.routines)[0] || null;
 }
 
 function getTodayDayKey() {
@@ -846,6 +918,27 @@ function renderHome() {
 
   const routine = getCurrentRoutine();
   const badge = document.getElementById('phaseBadge');
+  const emptyPanel = document.getElementById('emptyRoutinePanel');
+  const exerciseCardsEl = document.getElementById('exerciseCards');
+  const restDayPanel = document.getElementById('restDayPanel');
+  const homeFooter = document.getElementById('homeFooter');
+  const startBtn = document.getElementById('btnStartSession');
+  const stretchBtn = document.getElementById('btnStretch');
+
+  // 루틴 없음 상태: 빈 상태 UI
+  const hasRoutine = !!(routine && routine.exercises && routine.days);
+  if (!hasRoutine) {
+    emptyPanel.style.display = 'flex';
+    exerciseCardsEl.style.display = 'none';
+    restDayPanel.style.display = 'none';
+    homeFooter.style.display = 'none';
+    badge.textContent = '루틴 없음';
+    badge.className = 'badge';
+    return;
+  }
+
+  emptyPanel.style.display = 'none';
+
   if (routine) {
     const phaseMap = { recovery: '회복기', transition: '전환기', main: '메인' };
     badge.textContent = phaseMap[routine.phase] || routine.phase;
@@ -855,12 +948,6 @@ function renderHome() {
   const dow = getTodayDOW();
   const gymDay = isGymDay(dow);
   const todayExs = getTodayExercises();
-
-  const exerciseCardsEl = document.getElementById('exerciseCards');
-  const restDayPanel = document.getElementById('restDayPanel');
-  const homeFooter = document.getElementById('homeFooter');
-  const startBtn = document.getElementById('btnStartSession');
-  const stretchBtn = document.getElementById('btnStretch');
 
   if (gymDay) {
     // 헬스날: 운동 카드 + 스트레칭/시작 버튼
@@ -1550,6 +1637,7 @@ function saveReport() {
 // ============================================================
 function buildGeminiPrompt() {
   const routine = getCurrentRoutine();
+  if (!routine) return INITIAL_GEMINI_PROMPT;
   const session = DB.sessions[getTodayISO()];
 
   const recent7 = Object.values(DB.sessions)
@@ -1654,6 +1742,27 @@ ${todayExStr}
   "days": {"mon": [], "tue": [], "wed": [], "thu": [], "fri": [], "sat": [], "sun": []}
 }
 \`\`\``;
+}
+
+function copyTextToClipboard(text, successMsg) {
+  const doFallback = function() {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    toast(successMsg || '복사됨');
+  };
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      toast(successMsg || '복사됨');
+    }).catch(doFallback);
+  } else {
+    doFallback();
+  }
 }
 
 function copyGeminiPrompt() {
@@ -1909,6 +2018,17 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('cyclingIntVal').textContent = this.value;
   });
 
+  // Home — 빈 상태 버튼
+  document.getElementById('btnGetFirstRoutine').addEventListener('click', function() {
+    copyTextToClipboard(INITIAL_GEMINI_PROMPT, '프롬프트 복사됨. Gemini에 붙여넣으세요.');
+  });
+  document.getElementById('btnPasteRoutine').addEventListener('click', function() {
+    document.getElementById('pasteRoutineInput').value = '';
+    document.getElementById('pasteModalResult').style.display = 'none';
+    document.getElementById('pasteModalResult').textContent = '';
+    document.getElementById('pasteRoutineModal').classList.add('open');
+  });
+
   // Home
   document.getElementById('btnEvening').addEventListener('click', function() {
     renderReport();
@@ -2067,6 +2187,36 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   document.getElementById('stretchModal').addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('open');
+  });
+
+  // Paste routine modal
+  function closePasteModal() {
+    document.getElementById('pasteRoutineModal').classList.remove('open');
+  }
+  document.getElementById('btnClosePasteModal').addEventListener('click', closePasteModal);
+  document.getElementById('btnCancelPasteModal').addEventListener('click', closePasteModal);
+  document.getElementById('pasteRoutineModal').addEventListener('click', function(e) {
+    if (e.target === this) closePasteModal();
+  });
+  document.getElementById('btnApplyPastedRoutine').addEventListener('click', function() {
+    const text = document.getElementById('pasteRoutineInput').value.trim();
+    const resultEl = document.getElementById('pasteModalResult');
+    resultEl.style.display = '';
+    if (!text) { resultEl.className = 'err'; resultEl.textContent = '내용을 입력해주세요'; return; }
+    try {
+      const obj = parseRoutineFromText(text);
+      applyParsedRoutine(obj, null);
+      resultEl.className = 'ok';
+      resultEl.textContent = '✓ 루틴 "' + obj.id + '" 적용됨 (phase: ' + obj.phase + ')';
+      toast('루틴 "' + obj.id + '" 적용됨');
+      setTimeout(function() {
+        closePasteModal();
+        renderHome();
+      }, 800);
+    } catch(e) {
+      resultEl.className = 'err';
+      resultEl.textContent = '오류: ' + e.message;
+    }
   });
 
   // Pain modal
