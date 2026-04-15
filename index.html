@@ -143,19 +143,11 @@
     content: '✓ ';
     font-weight: 900;
   }
-  .set-chip.current {
-    border-color: var(--accent);
-    background: var(--bg3);
-    color: var(--text);
-    transform: scale(1.08);
-  }
-  .set-chip.just-done {
-    animation: pulseDone 0.6s ease-out;
-  }
-  @keyframes pulseDone {
-    0%   { transform: scale(1); background: var(--bg3); }
-    30%  { transform: scale(1.25); background: var(--accent); }
-    100% { transform: scale(1); background: var(--accent2); }
+  .set-chip-empty { font-size: 0.82rem; color: var(--text2); opacity: 0.6; font-style: italic; }
+  .set-chip.just-done { animation: slideInChip 0.5s ease-out; }
+  @keyframes slideInChip {
+    from { transform: translateY(-12px) scale(0.6); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
   }
 
   #sessionFooter { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
@@ -294,6 +286,9 @@
   /* cycling inline in report (kept for backwards compat) */
   .cycling-fields { display: flex; gap: 10px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
   .cycling-fields label { font-size: 0.85rem; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+
+  /* version footer */
+  #versionFooter { font-size: 0.7rem; color: var(--text2); opacity: 0.5; text-align: center; padding: 8px; }
 </style>
 </head>
 <body>
@@ -327,6 +322,7 @@
     <button class="btn-secondary" id="btnStretch">🧘 스트레칭</button>
     <button class="btn-primary" id="btnStartSession">▶ 시작</button>
   </div>
+  <div id="versionFooter">workout v4.4</div>
 </div>
 
 <!-- ===== 세션 진행 ===== -->
@@ -1013,21 +1009,18 @@ function renderSetUI(exEntry, exInfo) {
 function renderSetChips(exEntry) {
   const hist = document.getElementById('setHistory');
   hist.innerHTML = '';
-  const totalSets = exEntry.plan_sets + exEntry.extra_sets;
-  for (let i = 0; i < totalSets; i++) {
+  exEntry.sets.forEach(function(s) {
+    if (!s || !s.done) return;
     const chip = document.createElement('span');
-    const s = exEntry.sets[i];
-    if (s && s.done) {
-      chip.className = 'set-chip done';
-      chip.textContent = s.w + '×' + s.r;
-    } else if (i === sessionSetIdx) {
-      chip.className = 'set-chip current';
-      chip.textContent = '세트' + (i + 1);
-    } else {
-      chip.className = 'set-chip';
-      chip.textContent = '세트' + (i + 1);
-    }
+    chip.className = 'set-chip done';
+    chip.textContent = s.w + '×' + s.r;
     hist.appendChild(chip);
+  });
+  if (hist.children.length === 0) {
+    const empty = document.createElement('span');
+    empty.className = 'set-chip-empty';
+    empty.textContent = '완료한 세트가 여기 쌓임';
+    hist.appendChild(empty);
   }
   const doneSets = exEntry.sets.filter(function(s) { return s && s.done; });
   document.getElementById('btnRemoveSet').disabled = doneSets.length === 0;
@@ -1050,12 +1043,21 @@ function doneSet() {
   const exInfo = routine.exercises[exEntry.exercise_id] || {};
 
   renderSetChips(exEntry);
-  // 방금 완료한 칩에 just-done 애니메이션
-  const justDoneChip = document.querySelectorAll('#setHistory .set-chip')[sessionSetIdx];
+  // 방금 추가된 마지막 칩에 just-done 슬라이드인 애니메이션
+  const chips = document.querySelectorAll('#setHistory .set-chip.done');
+  const justDoneChip = chips[chips.length - 1];
   if (justDoneChip) {
     justDoneChip.classList.add('just-done');
-    setTimeout(function() { justDoneChip.classList.remove('just-done'); }, 600);
+    setTimeout(function() { justDoneChip.classList.remove('just-done'); }, 500);
   }
+  // 토스트 피드백
+  const doneCount = exEntry.sets.filter(function(s) { return s && s.done; }).length;
+  const toastMsg = w > 0
+    ? ('✓ ' + doneCount + '세트 완료 · ' + w + 'kg × ' + r + '회')
+    : ('✓ ' + doneCount + '세트 완료 · ' + r + '회');
+  toast(toastMsg, 2000);
+  // 짧은 진동 (타이머 완료 진동과 구분)
+  try { navigator.vibrate && navigator.vibrate(80); } catch(e) {}
 
   const restS = exInfo.rest_s != null ? exInfo.rest_s : 60;
 
