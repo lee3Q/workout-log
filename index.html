@@ -328,6 +328,22 @@
 
   /* version footer */
   #versionFooter { font-size: 0.7rem; color: var(--text2); opacity: 0.5; text-align: center; padding: 8px; }
+
+  /* --- Gem 갱신 배너 --- */
+  #gemRefreshBanner {
+    display: none;
+    background: #1e2a1e;
+    border: 1px solid var(--success);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    gap: 10px;
+    flex-direction: column;
+  }
+  #gemRefreshBanner.visible { display: flex; }
+  #gemRefreshBanner .banner-msg { font-size: 0.9rem; color: var(--success); font-weight: 600; }
+  #gemRefreshBanner .banner-btns { display: flex; gap: 8px; }
+  #gemRefreshBanner .banner-btns button { flex: 1; padding: 9px 12px; font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -352,6 +368,7 @@
       <div class="empty-desc">Gemini와 함께 네 상황에 맞는 루틴을 만들자.</div>
       <div class="empty-buttons">
         <button class="btn-primary" id="btnGetFirstRoutine">🤖 Gemini로 첫 루틴 받기</button>
+        <button class="btn-secondary" id="btnCopyGemInstructions">🧠 Gem용 instructions 복사</button>
         <button class="btn-secondary" id="btnPasteRoutine">📥 이미 루틴 JSON 있음? 붙여넣기</button>
       </div>
       <div class="empty-note">
@@ -375,7 +392,7 @@
     <button class="btn-secondary" id="btnStretch">🧘 스트레칭</button>
     <button class="btn-primary" id="btnStartSession">▶ 시작</button>
   </div>
-  <div id="versionFooter">workout v4.6</div>
+  <div id="versionFooter">workout v4.7</div>
 </div>
 
 <!-- ===== 세션 진행 ===== -->
@@ -503,6 +520,15 @@
   </header>
   <div class="scroll-body">
 
+    <!-- Gem 갱신 배너 (7세션마다 조건부 노출) -->
+    <div id="gemRefreshBanner">
+      <div class="banner-msg" id="gemRefreshMsg"></div>
+      <div class="banner-btns">
+        <button class="btn-primary btn-sm" id="btnGemRefreshCopy">📋 갱신 초안 복사</button>
+        <button class="btn-secondary btn-sm" id="btnGemRefreshLater">나중에</button>
+      </div>
+    </div>
+
     <div class="report-section">
       <h3>오늘 세션 요약</h3>
       <div id="reportSessionSummary"><span style="color:var(--text2)">아직 오늘 기록 없음</span></div>
@@ -582,6 +608,9 @@
   </header>
   <div class="scroll-body">
     <div id="routineList"></div>
+    <div style="margin-top:10px;margin-bottom:4px">
+      <button class="btn-danger" style="width:100%" id="btnResetAllRoutines">루틴 전체 초기화</button>
+    </div>
     <div class="card" style="margin-top:16px">
       <div class="card-title" style="margin-bottom:10px">JSON으로 루틴 추가</div>
       <textarea class="report-ta" id="routineJsonInput" placeholder='{"id":"...","phase":"...","exercises":{...},"days":{...}}' style="min-height:100px"></textarea>
@@ -694,6 +723,61 @@ const INITIAL_GEMINI_PROMPT = `나는 168cm 71kg 초보자 남성. 2026년 5월 
 - exercises 카탈로그에 없는 ex_id를 days에 쓰지 말 것.
 - rest_s=0은 스트레칭류, rest_s>=60 권장.`;
 
+const GEM_INSTRUCTIONS = `# 역할
+너는 이상규의 개인 운동 코치다. 사용자가 세션 기록·통증·식사·컨디션 데이터를 보내면, 다음 세션(또는 1-2주) 루틴을 JSON 포맷으로 뱉는다.
+
+# 사용자 프로필
+168cm 71kg 초보자 남성. 2026-05 노무사 1차 시험 준비. 주 2-3회 고강도 자전거(토·일·월·화 중심), 주 3일 웨이트(수·목·금).
+
+## 통증/상태
+- 왼쪽 손목 굴곡 통증 (건초염 의심)
+- 요추·장요근 뻐근함 (자전거 에어로 자세 영향)
+- 3대 220kg (스쿼트 80 / 벤치 60 / 데드 80) — 회복 후 복귀 목표
+
+## 원칙
+- 회복기: 그립 0% · 수직 척추 압박 0%. 손목 커프·전완 패드 머신·케이블 위주.
+- 3대 복귀 조건: 손목<=1 AND 허리<=1 이 2세션 연속 + 가벼운 무게(50%)부터 재진입
+- 단백질 114g+/일 (영양은 별도 관리. 단백질/탄수 부족만 피드백)
+- 음주 금지: 수·목·금·화. 허용: 일·토
+- 자전거 토일월화 중심, 헬스날 간섭 피함
+- 리서치 근거: 자전거 편향 교정(대퇴사두 과사용↔후면 사슬 복원), 5월 시험 전 적자 금지(뇌 포도당 방어)
+
+# 출력 형식 (루틴 요청 시 반드시 JSON 코드블록)
+\`\`\`json
+{
+  "id": "<unique_id_date_phase>",
+  "phase": "recovery|transition|main",
+  "notes": "짧은 의도·phase 요약",
+  "pain_rules": {
+    "return_to_main_lifts_when": "손목<=1 AND 허리<=1 이 2세션 연속",
+    "main_lifts_start_weight_pct": 50
+  },
+  "exercises": {
+    "<ex_id>": {
+      "name": "한글 운동명",
+      "rest_s": 90,
+      "intra_stretch": { "name": "스트레칭명", "seconds": 15, "details": ["단계1", "단계2", "⚠ 주의"] }
+    }
+  },
+  "days": {
+    "mon": [], "tue": [],
+    "wed": [ { "exercise_id": "<ex_id>", "sets": 4, "reps": "12-15", "start_weight_kg": null } ],
+    "thu": [], "fri": [], "sat": [], "sun": []
+  }
+}
+\`\`\`
+
+주의:
+- intra_stretch.details 는 배열, 각 원소 1줄. 통증 부위 케어용.
+- exercises에 없는 ex_id를 days에 쓰지 말 것.
+- rest_s=0은 스트레칭/정적 종목용, 나머지는 60+.
+
+# 상호작용 규칙
+- 사용자가 세션 데이터를 보내면: (1) 식사 단백질/탄수 짧은 피드백 (2) 다음 세션 또는 1-2주 루틴 JSON
+- 사용자가 통증 변화 알리면: 즉시 해당 부위 제외한 대체 운동 제시
+- 사용자가 "instructions 갱신"을 요청하면: 관찰된 패턴을 반영해 이 instructions 자체를 업데이트할 초안 제시 — 기존 유지 / 추가 / 삭제 / 새 instructions 전체 본문 순서로 출력
+- 루틴 응답 전에 사족 최소화. 필요한 설명은 notes 필드에.`;
+
 // 헬스 요일: 수(3), 목(4), 금(5)
 const GYM_DAYS = [3, 4, 5];
 
@@ -775,6 +859,13 @@ function initData() {
     if (d.routines && d.routines.recovery_v1) delete d.routines.recovery_v1;
     if (d.meta.current_routine_id === 'recovery_v1') d.meta.current_routine_id = null;
     d.meta.purged_seed_v1 = true;
+  }
+  // session_count 마이그레이션: 없으면 현재 sessions 개수로 초기화
+  if (d.meta.session_count === undefined || d.meta.session_count === null) {
+    d.meta.session_count = Object.keys(d.sessions).length;
+  }
+  if (d.meta.last_refresh_reminded === undefined || d.meta.last_refresh_reminded === null) {
+    d.meta.last_refresh_reminded = 0;
   }
   saveData(d);
   return d;
@@ -1200,6 +1291,7 @@ function endSession() {
   releaseWakeLock();
   currentSession.ended_at = new Date().toISOString();
   DB.sessions[getTodayISO()] = currentSession;
+  DB.meta.session_count = (DB.meta.session_count || 0) + 1;
   saveData(DB);
   currentSession = null;
   showScreen('screenReport');
@@ -1298,6 +1390,7 @@ function saveCyclingSession() {
   session.cycling = { minutes, intensity, distance_km, note };
   session.ended_at = new Date().toISOString();
   DB.sessions[getTodayISO()] = session;
+  DB.meta.session_count = (DB.meta.session_count || 0) + 1;
   saveData(DB);
   toast('자전거 세션 저장됨');
   showScreen('screenReport');
@@ -1428,6 +1521,7 @@ function saveBodyweightSession() {
   session.bodyweight = bwData;
   session.ended_at = new Date().toISOString();
   DB.sessions[getTodayISO()] = session;
+  DB.meta.session_count = (DB.meta.session_count || 0) + 1;
   saveData(DB);
   toast('맨몸 세션 저장됨');
   showScreen('screenReport');
@@ -1460,6 +1554,7 @@ function saveRestSession() {
     session.ended_at = new Date().toISOString();
   }
   DB.sessions[getTodayISO()] = session;
+  DB.meta.session_count = (DB.meta.session_count || 0) + 1;
   saveData(DB);
   toast('휴식 기록됨');
   showScreen('screenReport');
@@ -1471,6 +1566,16 @@ function saveRestSession() {
 // ============================================================
 function renderReport() {
   document.getElementById('reportDateSub').textContent = getTodayISO() + ' (' + WEEKDAYS[getTodayDOW()] + ')';
+
+  // Gem 갱신 배너 노출 조건 체크
+  const sc = DB.meta.session_count || 0;
+  const banner = document.getElementById('gemRefreshBanner');
+  if (sc > 0 && sc % 7 === 0 && sc !== DB.meta.last_refresh_reminded) {
+    document.getElementById('gemRefreshMsg').textContent = '🧠 ' + sc + '세션 도달. Gem instructions 갱신해볼까?';
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
 
   const session = DB.sessions[getTodayISO()];
   const sumEl = document.getElementById('reportSessionSummary');
@@ -1794,6 +1899,82 @@ function copyGeminiPrompt() {
 }
 
 // ============================================================
+//  GEM REFRESH PROMPT BUILDER
+// ============================================================
+function buildGemRefreshPrompt() {
+  const routine = getCurrentRoutine();
+  const sessionCount = DB.meta.session_count || 0;
+
+  // 최근 7세션
+  const recent7 = Object.values(DB.sessions)
+    .sort(function(a,b) { return b.date.localeCompare(a.date); })
+    .slice(0, 7);
+
+  const recent7Block = recent7.map(function(s) {
+    const t = s.type || (s.exercises && s.exercises.length > 0 ? 'weight' : null);
+    let typeTag = '[기록]';
+    if (t === 'weight') typeTag = '[웨이트]';
+    else if (t === 'cycling') typeTag = '[자전거]';
+    else if (t === 'bodyweight') typeTag = '[맨몸]';
+    else if (t === 'rest') typeTag = '[휴식]';
+
+    let exSummary = '';
+    if (t === 'weight' && routine) {
+      exSummary = (s.exercises || []).map(function(ex) {
+        const exInfo = routine.exercises[ex.exercise_id] || {};
+        const done = (ex.sets || []).filter(function(ss) { return ss.done; });
+        return '  - ' + (exInfo.name || ex.exercise_id) + ': ' + (done.length > 0 ? done.map(function(ss) { return ss.w + '\xd7' + ss.r; }).join('/') : '—');
+      }).join('\n');
+    } else if (t === 'cycling') {
+      const cy = s.cycling || {};
+      exSummary = '  - 자전거 ' + (cy.minutes || 0) + '분 강도' + (cy.intensity || '—') + '/10' + (cy.distance_km ? ' ' + cy.distance_km + 'km' : '');
+    } else if (t === 'bodyweight') {
+      const bw = s.bodyweight || [];
+      exSummary = bw.map(function(ex) {
+        return '  - ' + ex.name + ': ' + ex.sets.map(function(ss) { return ss.reps; }).join('/') + '회';
+      }).join('\n');
+    } else if (t === 'rest') {
+      exSummary = '  - 휴식';
+    }
+
+    const p = s.pain ? Object.entries(s.pain).map(function(e) { return e[0] + '=' + e[1]; }).join(', ') : '—';
+    return '[' + s.date + '] ' + typeTag + ' 컨디션' + (s.condition || '?') + '/10, 통증: ' + p + '\n' + (exSummary || '  운동 없음');
+  }).join('\n\n') || '없음';
+
+  // 통증 평균 (wrist, lower_back)
+  function avgPain(key) {
+    const vals = recent7.map(function(s) {
+      return (s.pain && s.pain[key] !== undefined) ? s.pain[key] : null;
+    }).filter(function(v) { return v !== null; });
+    if (vals.length === 0) return 'N/A';
+    return (vals.reduce(function(a,b) { return a+b; }, 0) / vals.length).toFixed(1);
+  }
+
+  // 최근 14일 cycling 세션 수와 평균 분수
+  const today = getTodayISO();
+  const d14ago = new Date(today);
+  d14ago.setDate(d14ago.getDate() - 14);
+  const d14agoStr = d14ago.getFullYear() + '-' +
+    String(d14ago.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d14ago.getDate()).padStart(2, '0');
+  const cyclingSessions = Object.values(DB.sessions).filter(function(s) {
+    return s.type === 'cycling' && s.date >= d14agoStr;
+  });
+  const cyclingDays = cyclingSessions.length;
+  const avgMinutes = cyclingDays > 0
+    ? Math.round(cyclingSessions.reduce(function(a, s) { return a + ((s.cycling && s.cycling.minutes) || 0); }, 0) / cyclingDays)
+    : 'N/A';
+
+  const currentPhase = routine ? (routine.phase || 'N/A') : 'N/A';
+
+  return 'instructions 갱신 초안 요청.\n\n최근 7세션:\n' + recent7Block +
+    '\n\n최근 통증 추세 (평균): 손목 ' + avgPain('wrist') + '/10, 허리 ' + avgPain('lower_back') + '/10' +
+    '\n자전거 패턴: 최근 14일 중 ' + cyclingDays + '회, 평균 ' + avgMinutes + '분' +
+    '\n현재 phase: ' + currentPhase +
+    '\n\n다음 형식으로 답해:\n1. [유지할 것] — 기존 instructions에서 여전히 유효한 부분\n2. [추가할 것] — 새로 관찰된 패턴/제약\n3. [뺄 것] — 더 이상 해당 없는 규칙\n4. [새 instructions 전체 본문] — 위 반영한 완성본 (Gem 설정에 그대로 붙여넣기용)';
+}
+
+// ============================================================
 //  ROUTINE PARSER (shared by report + routine mgmt)
 // ============================================================
 function parseRoutineFromText(text) {
@@ -1817,6 +1998,7 @@ function parseRoutineFromText(text) {
 }
 
 function applyParsedRoutine(obj, geminiText) {
+  const isOverwrite = !!DB.routines[obj.id];
   DB.routines[obj.id] = obj;
   DB.meta.current_routine_id = obj.id;
   if (geminiText) {
@@ -1833,6 +2015,11 @@ function applyParsedRoutine(obj, geminiText) {
     }
   }
   saveData(DB);
+  if (isOverwrite) {
+    toast('루틴 \'' + obj.id + '\' 덮어씀');
+  } else {
+    toast('루틴 \'' + obj.id + '\' 적용됨 (phase: ' + obj.phase + ')');
+  }
 }
 
 // ============================================================
@@ -2022,6 +2209,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('btnGetFirstRoutine').addEventListener('click', function() {
     copyTextToClipboard(INITIAL_GEMINI_PROMPT, '프롬프트 복사됨. Gemini에 붙여넣으세요.');
   });
+  document.getElementById('btnCopyGemInstructions').addEventListener('click', function() {
+    copyTextToClipboard(GEM_INSTRUCTIONS, 'Gem instructions 복사됨. Gemini Gem 설정에 붙여넣으세요.');
+  });
   document.getElementById('btnPasteRoutine').addEventListener('click', function() {
     document.getElementById('pasteRoutineInput').value = '';
     document.getElementById('pasteModalResult').style.display = 'none';
@@ -2149,8 +2339,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const obj = parseRoutineFromText(text);
       applyParsedRoutine(obj, text);
       resultEl.className = 'ok';
-      resultEl.textContent = '✓ 루틴 "' + obj.id + '" 적용됨 (phase: ' + obj.phase + ')';
-      toast('루틴 "' + obj.id + '" 적용됨');
+      resultEl.textContent = '✓ 루틴 \'' + obj.id + '\' 적용됨 (phase: ' + obj.phase + ')';
       renderHome();
     } catch(e) {
       resultEl.className = 'err';
@@ -2158,9 +2347,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Gem 갱신 배너 버튼
+  document.getElementById('btnGemRefreshCopy').addEventListener('click', function() {
+    const prompt = buildGemRefreshPrompt();
+    copyTextToClipboard(prompt, 'Gem 갱신 초안 복사됨. Gemini Gem에 붙여넣으세요.');
+    DB.meta.last_refresh_reminded = DB.meta.session_count || 0;
+    saveData(DB);
+    document.getElementById('gemRefreshBanner').classList.remove('visible');
+  });
+  document.getElementById('btnGemRefreshLater').addEventListener('click', function() {
+    document.getElementById('gemRefreshBanner').classList.remove('visible');
+  });
+
   // Routines
   document.getElementById('btnRoutineBack').addEventListener('click', function() {
     showScreen('screenReport');
+  });
+  document.getElementById('btnResetAllRoutines').addEventListener('click', function() {
+    if (!confirm('루틴 전체를 초기화할까요? 세션 기록은 유지됩니다.')) return;
+    DB.routines = {};
+    DB.meta.current_routine_id = null;
+    saveData(DB);
+    renderRoutines();
+    renderHome();
+    toast('루틴 초기화됨');
+    showScreen('screenHome');
   });
   document.getElementById('btnAddRoutine').addEventListener('click', function() {
     const text = document.getElementById('routineJsonInput').value.trim();
@@ -2207,8 +2418,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const obj = parseRoutineFromText(text);
       applyParsedRoutine(obj, null);
       resultEl.className = 'ok';
-      resultEl.textContent = '✓ 루틴 "' + obj.id + '" 적용됨 (phase: ' + obj.phase + ')';
-      toast('루틴 "' + obj.id + '" 적용됨');
+      resultEl.textContent = '✓ 루틴 \'' + obj.id + '\' 적용됨 (phase: ' + obj.phase + ')';
       setTimeout(function() {
         closePasteModal();
         renderHome();
