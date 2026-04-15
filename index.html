@@ -100,7 +100,7 @@
   #sessionBody { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 
   #exerciseName { font-size: 1.5rem; font-weight: 800; text-align: center; }
-  #setLabel { font-size: 0.9rem; color: var(--text2); text-align: center; }
+  #setLabel { font-size: 0.9rem; color: var(--text2); text-align: center; padding: 4px 12px; background: var(--bg3); border-radius: 20px; display: inline-block; font-weight: 600; }
 
   .num-input-row { display: flex; align-items: center; gap: 10px; justify-content: center; }
   .num-input-row .label { font-size: 0.85rem; color: var(--text2); min-width: 30px; text-align: right; }
@@ -122,9 +122,41 @@
   #stretchHintDetail { font-size: 0.82rem; color: var(--text2); margin-top: 8px; display: none; line-height: 1.7; }
   #stretchHintDetail.open { display: block; }
 
-  #setHistory { display: flex; flex-wrap: wrap; gap: 6px; }
-  .set-chip { background: var(--bg3); border-radius: 20px; padding: 4px 10px; font-size: 0.8rem; color: var(--text2); }
-  .set-chip.done { background: var(--accent2); color: #0f0f1a; }
+  #setHistory { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: var(--bg2); border-radius: 12px; min-height: 52px; align-items: center; }
+  .set-chip {
+    background: var(--bg3);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text2);
+    min-width: 60px;
+    text-align: center;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .set-chip.done {
+    background: var(--accent2);
+    color: #0f0f1a;
+  }
+  .set-chip.done::before {
+    content: '✓ ';
+    font-weight: 900;
+  }
+  .set-chip.current {
+    border-color: var(--accent);
+    background: var(--bg3);
+    color: var(--text);
+    transform: scale(1.08);
+  }
+  .set-chip.just-done {
+    animation: pulseDone 0.6s ease-out;
+  }
+  @keyframes pulseDone {
+    0%   { transform: scale(1); background: var(--bg3); }
+    30%  { transform: scale(1.25); background: var(--accent); }
+    100% { transform: scale(1); background: var(--accent2); }
+  }
 
   #sessionFooter { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
 
@@ -304,7 +336,13 @@
   <div id="sessionBody">
     <div style="text-align:center">
       <div id="exerciseName">—</div>
-      <div id="setLabel" style="margin-top:4px">—</div>
+      <div style="margin-top:4px"><div id="setLabel">—</div></div>
+    </div>
+
+    <!-- 세트 기록 chips -->
+    <div>
+      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:6px">이번 운동 세트</div>
+      <div id="setHistory"></div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -344,12 +382,6 @@
       <span id="stretchHintText"></span>
       <span id="stretchHintToggle">[자세히]</span>
       <div id="stretchHintDetail"></div>
-    </div>
-
-    <!-- 세트 기록 chips -->
-    <div>
-      <div style="font-size:0.8rem;color:var(--text2);margin-bottom:6px">이번 운동 세트</div>
-      <div id="setHistory"></div>
     </div>
   </div>
 
@@ -988,6 +1020,9 @@ function renderSetChips(exEntry) {
     if (s && s.done) {
       chip.className = 'set-chip done';
       chip.textContent = s.w + '×' + s.r;
+    } else if (i === sessionSetIdx) {
+      chip.className = 'set-chip current';
+      chip.textContent = '세트' + (i + 1);
     } else {
       chip.className = 'set-chip';
       chip.textContent = '세트' + (i + 1);
@@ -1015,6 +1050,12 @@ function doneSet() {
   const exInfo = routine.exercises[exEntry.exercise_id] || {};
 
   renderSetChips(exEntry);
+  // 방금 완료한 칩에 just-done 애니메이션
+  const justDoneChip = document.querySelectorAll('#setHistory .set-chip')[sessionSetIdx];
+  if (justDoneChip) {
+    justDoneChip.classList.add('just-done');
+    setTimeout(function() { justDoneChip.classList.remove('just-done'); }, 600);
+  }
 
   const restS = exInfo.rest_s != null ? exInfo.rest_s : 60;
 
