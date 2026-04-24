@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"ls -la ~/study/Day1_재료/\"}",
+  "error": "Exit code 1\nls: /Users/sanggyulee/study/Day1_재료/: No such file or directory",
+  "timestamp": "2026-04-23T16:59:28.499Z",
+  "retry_count": 1
+}
