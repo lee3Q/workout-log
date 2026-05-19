@@ -779,6 +779,9 @@
         parsed.settings ||= {};
         parsed.settings.goals ||= { ...CONFIG.defaultGoals };
         parsed.settings.placeFilter ||= "all";
+        Object.keys(CONFIG.defaultGoals).forEach(k => {
+          parsed.settings.goals[k] = CONFIG.defaultGoals[k];
+        });
 
         Object.keys(parsed.dailyLogs).forEach(date => {
           const log = parsed.dailyLogs[date];
