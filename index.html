@@ -2,507 +2,824 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0d1320" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0f18" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="WorkoutTracker" />
   <title>Workout Tracker Pro</title>
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="./manifest.json" />
   <style>
     :root{
       --bg:#0a0f18;
-      --bg2:#0e1522;
-      --panel:rgba(17,24,39,.88);
-      --panel-2:rgba(23,33,52,.92);
+      --bg-2:#0d1420;
+      --panel:rgba(20,28,42,.88);
+      --panel-2:rgba(26,37,56,.92);
       --line:rgba(255,255,255,.08);
       --line-2:rgba(255,255,255,.12);
-      --text:#f5f8fc;
-      --muted:#9fb0c3;
-      --blue:#6aa8ff;
-      --blue-2:#4f86ff;
+      --text:#f4f7fb;
+      --muted:#99a9bd;
+      --blue:#6ea8ff;
       --green:#7ce3a7;
       --yellow:#ffd36a;
-      --red:#ff8181;
-      --purple:#c2a0ff;
-      --cyan:#74d7ff;
-      --shadow:0 12px 34px rgba(0,0,0,.35);
+      --red:#ff8585;
+      --purple:#bfa1ff;
+      --shadow:0 10px 28px rgba(0,0,0,.28);
       --radius:20px;
-      --radius-sm:14px;
-      --max:1280px;
+      --radius-sm:16px;
+      --safe-top: env(safe-area-inset-top);
+      --safe-bottom: env(safe-area-inset-bottom);
+      --maxw:480px;
     }
+
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{margin:0;padding:0;background:
-      radial-gradient(circle at top left, rgba(79,134,255,.14), transparent 28%),
-      radial-gradient(circle at top right, rgba(124,227,167,.10), transparent 28%),
-      linear-gradient(180deg,var(--bg),var(--bg2));
+    html,body{
+      margin:0;padding:0;
+      background:
+      radial-gradient(circle at top left, rgba(110,168,255,.12), transparent 28%),
+      radial-gradient(circle at top right, rgba(124,227,167,.09), transparent 28%),
+      linear-gradient(180deg,var(--bg),var(--bg-2));
       color:var(--text);
       font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+      min-height:100%;
     }
-    a{color:inherit}
-    .app{max-width:var(--max);margin:0 auto;padding:16px;padding-bottom:110px}
+    body{
+      font-size:14px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .app{
+      width:100%;
+      max-width:var(--maxw);
+      min-height:100dvh;
+      position:relative;
+      padding-top:calc(12px + var(--safe-top));
+      padding-bottom:calc(92px + var(--safe-bottom));
+    }
+
+    .screen{
+      display:none;
+      padding:14px;
+      animation:fade .18s ease;
+    }
+    .screen.active{display:block}
+    @keyframes fade{
+      from{opacity:.5;transform:translateY(4px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    .header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:14px;
+    }
+
+    .title{
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:-.3px;
+    }
+
+    .sub{
+      color:var(--muted);
+      margin-top:4px;
+      font-size:13px;
+      line-height:1.4;
+    }
+
     .glass{
       background:var(--panel);
-      backdrop-filter: blur(16px);
+      backdrop-filter:blur(12px);
+      -webkit-backdrop-filter:blur(12px);
       border:1px solid var(--line);
       border-radius:var(--radius);
       box-shadow:var(--shadow);
     }
-    .card{padding:16px}
-    .topbar{
-      display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px
-    }
-    .brandWrap{display:flex;flex-direction:column;gap:6px}
-    .brand{
-      display:flex;align-items:center;gap:10px
-    }
-    .logo{
-      width:42px;height:42px;border-radius:14px;
-      background:linear-gradient(135deg,var(--blue),var(--purple));
-      display:flex;align-items:center;justify-content:center;
-      font-size:22px;box-shadow:0 12px 24px rgba(79,134,255,.25)
-    }
-    .title{font-size:24px;font-weight:900;letter-spacing:-.4px}
-    .sub{font-size:13px;color:var(--muted)}
-    .topActions,.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    button,input,select,textarea{font:inherit}
-    button{
-      border:none;cursor:pointer;border-radius:14px;padding:11px 14px;
-      background:var(--panel-2);color:var(--text);border:1px solid var(--line)
-    }
-    button:hover{transform:translateY(-1px)}
-    button.primary{background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#06111d;font-weight:900;border:none}
-    button.green{background:linear-gradient(135deg,var(--green),#59d88d);color:#06130c;font-weight:900;border:none}
-    button.yellow{background:linear-gradient(135deg,var(--yellow),#ffc24d);color:#221602;font-weight:900;border:none}
-    button.red{background:linear-gradient(135deg,var(--red),#ff6767);color:#260707;font-weight:900;border:none}
-    button.purple{background:linear-gradient(135deg,var(--purple),#a786ff);color:#160b27;font-weight:900;border:none}
-    button.ghost{background:transparent}
-    input,select,textarea{
-      width:100%;background:rgba(255,255,255,.04);color:var(--text);
-      border:1px solid var(--line);border-radius:14px;padding:11px 12px;outline:none
-    }
-    textarea{min-height:84px;resize:vertical}
-    .pill{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.04);
-      border:1px solid var(--line);color:var(--muted);font-size:12px
+
+    .card{
+      padding:14px;
+      margin-bottom:12px;
     }
 
-    .layout{
-      display:grid;grid-template-columns:1.15fr .85fr;gap:14px
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+      flex-wrap:wrap;
     }
-    @media (max-width:1024px){.layout{grid-template-columns:1fr}}
 
-    .sectionTitle{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px
+    .section-title h2,
+    .section-title h3{
+      margin:0;
+      font-size:17px;
     }
-    .sectionTitle h2{margin:0;font-size:18px}
+
+    .muted{color:var(--muted)}
     .small{font-size:12px;color:var(--muted)}
     .tiny{font-size:11px;color:var(--muted)}
-    .muted{color:var(--muted)}
+
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .col{display:grid;gap:8px}
+
+    button, input, select, textarea{
+      font:inherit;
+    }
+
+    button{
+      min-height:44px;
+      border:none;
+      border-radius:14px;
+      padding:11px 14px;
+      color:var(--text);
+      background:var(--panel-2);
+      border:1px solid var(--line);
+      cursor:pointer;
+      transition:.15s ease;
+    }
+    button:active{transform:scale(.98)}
+
+    button.primary{
+      background:linear-gradient(135deg,var(--blue),#4f86ff);
+      color:#08111d;
+      font-weight:900;
+      border:none;
+    }
+    button.green{
+      background:linear-gradient(135deg,var(--green),#5fd694);
+      color:#08140d;
+      font-weight:900;
+      border:none;
+    }
+    button.yellow{
+      background:linear-gradient(135deg,var(--yellow),#ffc24c);
+      color:#251a03;
+      font-weight:900;
+      border:none;
+    }
+    button.red{
+      background:linear-gradient(135deg,var(--red),#ff6767);
+      color:#220808;
+      font-weight:900;
+      border:none;
+    }
+    button.purple{
+      background:linear-gradient(135deg,var(--purple),#a786ff);
+      color:#1a0f2a;
+      font-weight:900;
+      border:none;
+    }
+    button.ghost{
+      background:transparent;
+    }
+
+    input, select, textarea{
+      width:100%;
+      min-height:44px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:11px 12px;
+      outline:none;
+    }
+
+    textarea{
+      min-height:82px;
+      resize:vertical;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border-radius:999px;
+      padding:6px 10px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      font-size:12px;
+      color:var(--muted);
+    }
 
     .hero{
-      display:grid;grid-template-columns:repeat(4,1fr);gap:10px
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      margin-bottom:10px;
     }
-    @media (max-width:820px){.hero{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:520px){.hero{grid-template-columns:1fr}}
-    .heroCard{
-      padding:14px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.03));
-      border:1px solid var(--line)
-    }
-    .heroVal{font-size:28px;font-weight:900;margin-top:6px;letter-spacing:-.3px}
-    .heroHint{font-size:12px;color:var(--muted);margin-top:4px}
 
-    .highlight{
-      margin-top:12px;padding:14px;border-radius:18px;
-      background:linear-gradient(135deg,rgba(106,168,255,.12),rgba(124,227,167,.10));
-      border:1px solid var(--line)
+    .hero-item{
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      padding:12px;
     }
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:700px){.grid2{grid-template-columns:1fr}}
 
-    .remaining{
-      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px
+    .hero-value{
+      font-size:22px;
+      font-weight:900;
+      margin-top:4px;
     }
-    @media (max-width:700px){.remaining{grid-template-columns:1fr}}
-    .remainItem{padding:12px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px}
-    .progress{
-      width:100%;height:10px;border-radius:999px;background:#0a111b;border:1px solid var(--line);
-      overflow:hidden;margin-top:8px
-    }
-    .bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--green));width:0%}
 
-    .calendarHead{
-      display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px
+    .exercise-list{
+      display:grid;
+      gap:8px;
     }
+
+    .exercise-row{
+      display:grid;
+      grid-template-columns:1fr 110px;
+      gap:8px;
+      align-items:center;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:16px;
+      padding:10px;
+    }
+
+    .exercise-name{
+      font-weight:800;
+      font-size:14px;
+    }
+
+    .exercise-sub{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:3px;
+    }
+
+    .stepper{
+      display:flex;
+      gap:6px;
+      align-items:center;
+    }
+
+    .stepper button{
+      width:44px;
+      min-width:44px;
+      padding:0;
+    }
+
+    .stepper input{
+      text-align:center;
+      padding:10px 6px;
+    }
+
+    .toggle-tabs{
+      display:flex;
+      gap:8px;
+    }
+
+    .toggle-tabs button{
+      flex:1;
+    }
+
+    .toggle-tabs button.active{
+      background:linear-gradient(135deg,var(--blue),#4f86ff);
+      color:#07101b;
+      border:none;
+      font-weight:900;
+    }
+
+    .calendar-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+      gap:8px;
+    }
+
+    .calendar-wrap{
+      touch-action:pan-y;
+    }
+
     .calendar{
-      display:grid;grid-template-columns:repeat(7,1fr);gap:6px
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:6px;
     }
+
     .weekday{
-      text-align:center;padding:9px 0;border-radius:12px;background:rgba(255,255,255,.03);
-      border:1px solid var(--line);font-size:12px;font-weight:800;color:var(--muted)
+      text-align:center;
+      font-size:12px;
+      color:var(--muted);
+      padding:8px 0;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.03);
+      font-weight:800;
     }
+
     .day{
-      min-height:96px;padding:8px;border-radius:16px;background:rgba(255,255,255,.04);
-      border:1px solid var(--line);display:flex;flex-direction:column;gap:6px;cursor:pointer;
-      transition:.15s ease
+      min-height:72px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      padding:6px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      cursor:pointer;
     }
-    .day:hover{transform:translateY(-1px)}
+
     .day.other{opacity:.28}
     .day.today{outline:2px solid var(--blue)}
-    .day.selected{border-color:var(--green);box-shadow:0 0 0 1px rgba(124,227,167,.35) inset}
-    .dayTop{display:flex;justify-content:space-between;align-items:center}
-    .dayNum{font-size:14px;font-weight:900}
-    .badges{display:flex;flex-wrap:wrap;gap:4px}
+    .day.selected{border-color:var(--green)}
+    .day-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+    .day-num{font-weight:900;font-size:13px}
+    .badge-wrap{display:flex;flex-wrap:wrap;gap:4px}
     .badge{
-      display:inline-block;padding:3px 7px;border-radius:999px;font-size:10px;border:1px solid transparent
+      font-size:10px;
+      padding:2px 6px;
+      border-radius:999px;
+      border:1px solid transparent;
+      line-height:1.2;
     }
-    .b-work{background:rgba(106,168,255,.14);color:#d9e9ff;border-color:rgba(106,168,255,.22)}
-    .b-sleep{background:rgba(194,160,255,.14);color:#eadcff;border-color:rgba(194,160,255,.22)}
-    .b-sore{background:rgba(255,211,106,.14);color:#ffecb3;border-color:rgba(255,211,106,.22)}
-    .b-rec{background:rgba(124,227,167,.14);color:#dbffe8;border-color:rgba(124,227,167,.22)}
-    .b-note{background:rgba(255,255,255,.08);color:#e5edf5;border-color:rgba(255,255,255,.08)}
+    .b-work{background:rgba(110,168,255,.14);color:#dbe9ff;border-color:rgba(110,168,255,.2)}
+    .b-sleep{background:rgba(191,161,255,.14);color:#eadfff;border-color:rgba(191,161,255,.2)}
+    .b-sore{background:rgba(255,211,106,.14);color:#ffefbc;border-color:rgba(255,211,106,.2)}
 
-    .exerciseGroup{border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:10px}
-    .exerciseHead{
-      padding:12px 14px;background:rgba(255,255,255,.03);display:flex;justify-content:space-between;align-items:center;gap:8px
+    .progress-card{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:16px;
+      padding:12px;
+      margin-bottom:8px;
     }
-    .exerciseItems{padding:10px;display:grid;gap:8px}
-    .exerciseRow{
-      display:grid;grid-template-columns:1fr 108px;gap:8px;align-items:center;
-      padding:12px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)
-    }
-    @media (max-width:620px){.exerciseRow{grid-template-columns:1fr}}
-    .exerciseName{font-weight:800;font-size:14px}
-    .exerciseSub{font-size:12px;color:var(--muted);margin-top:4px}
-    .inputWrap{display:flex;align-items:center;gap:6px}
-    .stepBtn{width:36px;min-width:36px;height:36px;padding:0;border-radius:12px;font-weight:900}
-    .numInput{text-align:center;padding:9px 6px}
 
-    .list{display:grid;gap:8px}
-    .item{padding:12px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
-    .chip{
-      display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.04);
-      border:1px solid var(--line);color:var(--muted);font-size:11px;margin-right:5px;margin-top:5px
+    .progress{
+      width:100%;
+      height:10px;
+      background:#09111a;
+      border:1px solid var(--line);
+      border-radius:999px;
+      overflow:hidden;
+      margin-top:8px;
     }
+
+    .bar{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,var(--blue),var(--green));
+    }
+
+    .bars{
+      display:grid;
+      gap:8px;
+    }
+
+    .bar-row{
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:16px;
+      padding:12px;
+    }
+
+    .hbar{
+      width:100%;
+      height:12px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#09111a;
+      border:1px solid var(--line);
+      margin-top:8px;
+    }
+
+    .hfill{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,var(--purple),var(--blue));
+    }
+
+    .list{
+      display:grid;
+      gap:8px;
+    }
+
+    .item{
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      padding:12px;
+    }
+
     .empty{
-      padding:12px;border-radius:14px;border:1px dashed var(--line-2);color:var(--muted);font-size:13px;background:rgba(255,255,255,.02)
+      border-radius:16px;
+      border:1px dashed var(--line-2);
+      background:rgba(255,255,255,.03);
+      padding:12px;
+      color:var(--muted);
     }
 
-    .tabs{display:flex;gap:8px;overflow:auto;padding-bottom:2px}
-    .bars{display:grid;gap:10px}
-    .barRow{padding:12px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
-    .hbar{height:12px;background:#09111a;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:8px}
-    .hfill{height:100%;background:linear-gradient(90deg,var(--purple),var(--cyan));width:0%}
-
-    .sticky{
-      position:fixed;left:0;right:0;bottom:0;z-index:30;
-      background:rgba(10,15,24,.92);backdrop-filter:blur(18px);border-top:1px solid var(--line)
+    .nav{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%);
+      bottom:0;
+      width:100%;
+      max-width:var(--maxw);
+      padding:8px 12px calc(8px + var(--safe-bottom));
+      background:rgba(10,15,24,.94);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+      border-top:1px solid var(--line);
+      z-index:50;
     }
-    .stickyIn{
-      max-width:var(--max);margin:0 auto;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
-      display:grid;grid-template-columns:1fr 1fr;gap:8px
+
+    .nav-inner{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
     }
 
-    .reportBox{
-      display:grid;gap:10px
+    .tab-btn{
+      min-height:56px;
+      border-radius:16px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:4px;
+      font-size:12px;
+      color:var(--muted);
     }
-    .reportActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    @media (max-width:560px){.reportActions{grid-template-columns:1fr}}
 
-    .installHint{
-      margin-top:8px;padding:10px 12px;border-radius:14px;background:rgba(124,227,167,.08);
-      border:1px solid rgba(124,227,167,.18);font-size:12px;color:#dfffee
+    .tab-btn.active{
+      color:var(--text);
+      background:linear-gradient(135deg,rgba(110,168,255,.2),rgba(124,227,167,.14));
+      border-color:rgba(110,168,255,.24);
+    }
+
+    .tab-icon{
+      font-size:18px;
+      line-height:1;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      transform:translateX(-50%) translateY(20px);
+      bottom:calc(84px + var(--safe-bottom));
+      width:calc(100% - 28px);
+      max-width:420px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:rgba(16,24,36,.96);
+      border:1px solid rgba(255,255,255,.1);
+      box-shadow:0 10px 24px rgba(0,0,0,.3);
+      color:var(--text);
+      font-size:14px;
+      opacity:0;
+      pointer-events:none;
+      transition:.22s ease;
+      z-index:60;
+    }
+
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(0);
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="topbar">
-      <div class="brandWrap">
-        <div class="brand">
-          <div class="logo">🏋️</div>
-          <div>
-            <div class="title">Workout Tracker Pro</div>
-            <div class="sub">디자인 업그레이드 · 보고서 내보내기 · PWA 설치 지원</div>
-          </div>
+    <!-- 홈 -->
+    <section id="screen-home" class="screen active">
+      <div class="header">
+        <div>
+          <div class="title">홈</div>
+          <div class="sub" id="homeDateLabel"></div>
         </div>
         <div class="row">
-          <span class="pill" id="selectedDatePill">선택 날짜</span>
-          <span class="pill" id="selectedWeekPill">주간 범위</span>
+          <button id="goTodayBtn" class="ghost">오늘</button>
+          <div class="pill" id="homeWeekLabel"></div>
         </div>
-      </div>
-      <div class="topActions">
-        <button id="goTodayBtn" class="primary">오늘</button>
-        <button id="installBtn" class="green" style="display:none;">앱 설치</button>
-        <button id="exportBtn">백업</button>
-        <button id="importBtn">복원</button>
-        <button id="clearAllBtn" class="red">전체 삭제</button>
-        <input type="file" id="importFile" accept=".json" style="display:none" />
-      </div>
-    </div>
-
-    <div class="layout">
-      <div class="glass card">
-        <div class="sectionTitle">
-          <div>
-            <h2>월간 달력</h2>
-            <div class="small">날짜를 눌러 그날 운동 / 수면 / 회복 상태를 기록하세요.</div>
-          </div>
-          <div class="calendarHead">
-            <button id="prevMonthBtn" class="ghost">◀</button>
-            <strong id="calendarTitle"></strong>
-            <button id="nextMonthBtn" class="ghost">▶</button>
-          </div>
-        </div>
-        <div class="calendar" id="calendar"></div>
       </div>
 
       <div class="glass card">
-        <div class="sectionTitle">
-          <div>
-            <h2>오늘 / 선택 날짜 현황</h2>
-            <div class="small" id="selectedDateLabel"></div>
-          </div>
-          <span class="pill" id="selectedWeekLabel"></span>
-        </div>
-
         <div class="hero">
-          <div class="heroCard">
-            <div class="muted">오늘 입력 세트</div>
-            <div class="heroVal" id="dayTotal">0</div>
-            <div class="heroHint">선택한 날짜 기준</div>
+          <div class="hero-item">
+            <div class="muted">오늘 세트</div>
+            <div class="hero-value" id="heroDaySets">0</div>
           </div>
-          <div class="heroCard">
-            <div class="muted">이번 주 총 세트</div>
-            <div class="heroVal" id="weekTotal">0</div>
-            <div class="heroHint">주간 누적</div>
-          </div>
-          <div class="heroCard">
+          <div class="hero-item">
             <div class="muted">수면 시간</div>
-            <div class="heroVal" id="sleepHero">0h</div>
-            <div class="heroHint">선택 날짜 기준</div>
-          </div>
-          <div class="heroCard">
-            <div class="muted">주간 운동일</div>
-            <div class="heroVal" id="weekDaysHero">0</div>
-            <div class="heroHint">해당 주 기록</div>
+            <div class="hero-value" id="heroSleep">0h</div>
           </div>
         </div>
 
-        <div class="highlight">
-          <div id="weeklyFeedback" class="small"></div>
-          <div class="remaining" id="remainingBox"></div>
-        </div>
-
-        <div id="installHint" class="installHint" style="display:none;">
-          브라우저에서 이 앱을 설치할 수 있습니다. "앱 설치" 버튼을 눌러 홈 화면에 추가하세요.
-        </div>
-      </div>
-    </div>
-
-    <div class="layout" style="margin-top:14px;">
-      <div class="glass card">
-        <div class="sectionTitle">
-          <div>
-            <h2>운동 입력</h2>
-            <div class="small">세트만 간단하게 입력. 집 / 헬스장 프리셋 필터 가능.</div>
-          </div>
-          <div class="tabs">
-            <button id="showAllBtn" class="primary">전체</button>
-            <button id="presetHomeBtn">집</button>
-            <button id="presetGymBtn">헬스장</button>
-            <button id="clearDayBtn" class="yellow">선택 날짜 초기화</button>
-          </div>
-        </div>
-
-        <div class="grid2" style="margin-bottom:10px;">
-          <div>
-            <label class="small">수면 시간(시간)</label>
-            <input id="sleepInput" type="number" min="0" step="0.5" inputmode="decimal" placeholder="예: 7.5" />
-          </div>
-          <div>
-            <label class="small">메모</label>
-            <input id="dayNote" type="text" placeholder="예: 어깨 자극 좋음 / 삼두 피로 큼" />
-          </div>
-        </div>
-
-        <div id="exerciseForm"></div>
-      </div>
-
-      <div style="display:grid;gap:14px;">
-        <div class="glass card">
-          <div class="sectionTitle">
-            <div>
-              <h2>회복 기록</h2>
-              <div class="small">근육통 시작 → 나중에 회복됨 처리</div>
-            </div>
-            <span class="pill" id="activeSoreCount">0개 진행중</span>
-          </div>
-
-          <div class="grid2" style="margin-bottom:10px;">
-            <select id="soreGroup">
-              <option value="어깨">어깨</option>
-              <option value="이두">이두</option>
-              <option value="삼두">삼두</option>
-              <option value="가슴">가슴</option>
-              <option value="등">등</option>
-              <option value="하체">하체</option>
-              <option value="복근">복근</option>
-              <option value="종아리">종아리</option>
+        <div class="section-title">
+          <h2>오늘 운동</h2>
+          <div class="row">
+            <select id="homeFilter">
+              <option value="all">전체</option>
+              <option value="home">집</option>
+              <option value="gym">헬스장</option>
             </select>
-            <button id="startSoreBtn" class="green">근육통 시작 기록</button>
-          </div>
-
-          <div class="small" style="margin-bottom:8px;">진행 중</div>
-          <div id="activeSoreList" class="list"></div>
-
-          <div class="small" style="margin:12px 0 8px;">최근 회복 완료</div>
-          <div id="resolvedSoreList" class="list"></div>
-        </div>
-
-        <div class="glass card">
-          <div class="sectionTitle">
-            <div>
-              <h2>주간 요약</h2>
-              <div class="small" id="weekRangeText"></div>
-            </div>
-          </div>
-          <div id="weeklySummary" class="list"></div>
-        </div>
-
-        <div class="glass card">
-          <div class="sectionTitle">
-            <div>
-              <h2>통계</h2>
-              <div class="small">월간 / 요일별 / 부위별 / 수면</div>
-            </div>
-          </div>
-          <div class="tabs" style="margin-bottom:10px;">
-            <button id="statMonthBtn" class="primary">월간</button>
-            <button id="statWeekdayBtn">요일별</button>
-            <button id="statMuscleBtn">부위별</button>
-            <button id="statSleepBtn">수면</button>
-          </div>
-          <div id="statsPanel"></div>
-        </div>
-
-        <div class="glass card">
-          <div class="sectionTitle">
-            <div>
-              <h2>보고서 내보내기</h2>
-              <div class="small">Markdown(.md) / HTML(.html) 보고서 저장</div>
-            </div>
-          </div>
-
-          <div class="reportBox">
-            <div class="grid2">
-              <div>
-                <label class="small">보고서 범위</label>
-                <select id="reportRange">
-                  <option value="week">이번 주</option>
-                  <option value="month">현재 달</option>
-                  <option value="all">전체 기록</option>
-                </select>
-              </div>
-              <div>
-                <label class="small">보고서 제목</label>
-                <input id="reportTitle" type="text" placeholder="예: 5월 운동 보고서" />
-              </div>
-            </div>
-            <div class="reportActions">
-              <button id="downloadMdBtn" class="purple">Markdown 저장</button>
-              <button id="downloadHtmlReportBtn" class="green">HTML 저장</button>
-            </div>
           </div>
         </div>
 
-        <div class="glass card">
-          <div class="sectionTitle">
-            <div>
-              <h2>최근 기록</h2>
-              <div class="small">최근 20개 날짜 기록</div>
-            </div>
+        <div id="homeExerciseList" class="exercise-list"></div>
+
+        <div class="section-title" style="margin-top:12px;">
+          <h2>오늘 수면</h2>
+          <span class="pill" id="sleepDurationPill">0h</span>
+        </div>
+
+        <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <label class="small">취침 시간</label>
+            <input type="time" id="sleepStart" />
           </div>
-          <div id="historyList" class="list"></div>
+          <div>
+            <label class="small">기상 시간</label>
+            <input type="time" id="sleepEnd" />
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top:12px;">
+          <h2>오늘 메모</h2>
+        </div>
+        <input type="text" id="dayNote" placeholder="한 줄 메모" />
+
+        <div class="row" style="margin-top:12px;">
+          <button id="saveHomeBtn" class="primary" style="flex:1;">저장</button>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <div class="sticky">
-    <div class="stickyIn">
-      <button id="saveBtn" class="primary">선택 날짜 저장</button>
-      <button id="copyPrevBtn">이전 운동 기록 복사</button>
-    </div>
+    <!-- 달력 -->
+    <section id="screen-calendar" class="screen">
+      <div class="header">
+        <div>
+          <div class="title">달력</div>
+          <div class="sub">날짜를 눌러 홈 탭에서 바로 수정 · 좌우 스와이프로 월 이동</div>
+        </div>
+      </div>
+
+      <div class="glass card">
+        <div class="calendar-head">
+          <button id="prevMonthBtn" class="ghost">◀</button>
+          <strong id="calendarTitle"></strong>
+          <button id="nextMonthBtn" class="ghost">▶</button>
+        </div>
+        <div id="calendarWrap" class="calendar-wrap">
+          <div class="calendar" id="calendar"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 통계 -->
+    <section id="screen-stats" class="screen">
+      <div class="header">
+        <div>
+          <div class="title">통계</div>
+          <div class="sub">주간 / 월간 진행률과 수면 패턴</div>
+        </div>
+      </div>
+
+      <div class="glass card">
+        <div class="toggle-tabs">
+          <button id="statsWeekBtn" class="active">주간</button>
+          <button id="statsMonthBtn">월간</button>
+        </div>
+      </div>
+
+      <div class="glass card">
+        <div class="section-title">
+          <h2>요약</h2>
+          <span class="pill" id="statsRangeLabel"></span>
+        </div>
+        <div class="hero">
+          <div class="hero-item">
+            <div class="muted">총 세트</div>
+            <div class="hero-value" id="statsTotalSets">0</div>
+          </div>
+          <div class="hero-item">
+            <div class="muted">운동일 수</div>
+            <div class="hero-value" id="statsWorkoutDays">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass card">
+        <div class="section-title">
+          <h2>부위별 세트 달성률</h2>
+        </div>
+        <div id="progressList"></div>
+      </div>
+
+      <div class="glass card">
+        <div class="section-title">
+          <h2>수면 패턴</h2>
+        </div>
+        <div id="sleepBars" class="bars"></div>
+      </div>
+
+      <div class="glass card">
+        <div class="section-title">
+          <h2>보고서</h2>
+        </div>
+        <div class="col">
+          <input id="reportTitle" type="text" placeholder="보고서 제목" />
+          <div class="row">
+            <button id="exportMdBtn" class="purple" style="flex:1;">MD 저장</button>
+            <button id="exportHtmlBtn" class="green" style="flex:1;">HTML 저장</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 설정 -->
+    <section id="screen-settings" class="screen">
+      <div class="header">
+        <div>
+          <div class="title">설정</div>
+          <div class="sub">목표 · 백업 · 복원 · 회복 · 설치</div>
+        </div>
+      </div>
+
+      <div class="glass card">
+        <div class="section-title"><h2>주간 목표 세트</h2></div>
+        <div id="goalInputs" class="col"></div>
+      </div>
+
+      <div class="glass card">
+        <div class="section-title"><h2>회복 기록</h2></div>
+        <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <select id="soreGroup">
+            <option value="어깨">어깨</option>
+            <option value="이두">이두</option>
+            <option value="삼두">삼두</option>
+            <option value="가슴">가슴</option>
+            <option value="등">등</option>
+            <option value="하체">하체</option>
+            <option value="복근">복근</option>
+            <option value="종아리">종아리</option>
+          </select>
+          <button id="startSoreBtn" class="yellow">근육통 시작</button>
+        </div>
+        <div class="section-title" style="margin-top:10px;"><h3>진행 중</h3></div>
+        <div id="activeSoreList" class="list"></div>
+      </div>
+
+      <div class="glass card">
+        <div class="section-title"><h2>데이터</h2></div>
+        <div class="col">
+          <button id="installBtn" class="primary" style="display:none;">앱 설치</button>
+          <button id="exportJsonBtn">JSON 백업</button>
+          <button id="importJsonBtn">JSON 가져오기</button>
+          <input id="importFile" type="file" accept=".json" style="display:none;" />
+          <button id="clearAllBtn" class="red">전체 데이터 삭제</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 토스트 -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 하단 탭바 -->
+    <nav class="nav">
+      <div class="nav-inner">
+        <button class="tab-btn active" data-screen="home">
+          <span class="tab-icon">🏠</span>
+          <span>홈</span>
+        </button>
+        <button class="tab-btn" data-screen="calendar">
+          <span class="tab-icon">🗓️</span>
+          <span>달력</span>
+        </button>
+        <button class="tab-btn" data-screen="stats">
+          <span class="tab-icon">📊</span>
+          <span>통계</span>
+        </button>
+        <button class="tab-btn" data-screen="settings">
+          <span class="tab-icon">⚙️</span>
+          <span>설정</span>
+        </button>
+      </div>
+    </nav>
   </div>
 
   <script>
     const STORAGE_KEY = "workoutTrackerPro_pwa_report_v1";
 
-    function getToday(){
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    function getTodayString(){
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth()+1).padStart(2,"0");
+      const d = String(now.getDate()).padStart(2,"0");
+      return `${y}-${m}-${d}`;
     }
-    const TODAY = getToday();
+
+    const TODAY = getTodayString();
 
     const CONFIG = {
-      goals: { "어깨":13,"이두":10,"삼두":10,"가슴":10,"등":10,"하체":10,"복근":6,"종아리":6 },
+      defaultGoals: { "어깨":13,"이두":10,"삼두":10,"가슴":10,"등":10,"하체":10,"복근":6,"종아리":6 },
       groups: [
         { group:"어깨", items:[
-          { id:"shoulder_press", name:"덤벨 숄더 프레스 / 케이블 숄더 프레스", target:4, muscle:"어깨", place:["home","gym"] },
-          { id:"lateral_raise", name:"사레레 / 케이블 측면 레터럴 레이즈", target:5, muscle:"어깨", place:["home","gym"] },
-          { id:"rear_raise", name:"벤트오버 사레레 / 케이블 후면 레터럴 레이즈", target:4, muscle:"어깨", place:["home","gym"] }
+          { id:"shoulder_press", name:"덤벨 숄더 프레스", target:4, muscle:"어깨", place:["home","gym"] },
+          { id:"lateral_raise", name:"사레레", target:5, muscle:"어깨", place:["home","gym"] },
+          { id:"rear_raise", name:"벤트오버 사레레", target:4, muscle:"어깨", place:["home","gym"] }
         ]},
         { group:"팔", items:[
-          { id:"bicep_curl", name:"덤벨 컬 / 케이블 컬", target:10, muscle:"이두", place:["home","gym"] },
-          { id:"tricep_extension", name:"오버헤드 트라이셉스 익스텐션 / 케이블 푸시다운", target:10, muscle:"삼두", place:["home","gym"] }
+          { id:"bicep_curl", name:"덤벨 컬", target:10, muscle:"이두", place:["home","gym"] },
+          { id:"tricep_extension", name:"오버헤드 트라이셉스 익스텐션", target:10, muscle:"삼두", place:["home","gym"] }
         ]},
         { group:"가슴", items:[
-          { id:"flat_press", name:"플랫 벤치 머신 / 덤벨 플랫 프레스", target:4, muscle:"가슴", place:["home","gym"] },
-          { id:"incline_press", name:"인클라인 벤치 머신 / 덤벨 인클라인 프레스", target:3, muscle:"가슴", place:["home","gym"] },
-          { id:"fly", name:"머신 플라이 / 덤벨 플라이", target:3, muscle:"가슴", place:["home","gym"] }
+          { id:"flat_press", name:"플랫 벤치", target:4, muscle:"가슴", place:["home","gym"] },
+          { id:"incline_press", name:"인클라인 벤치", target:3, muscle:"가슴", place:["home","gym"] },
+          { id:"fly", name:"플라이", target:3, muscle:"가슴", place:["home","gym"] }
         ]},
         { group:"등", items:[
-          { id:"lat_pulldown", name:"랫풀다운 / 점프 풀업", target:4, muscle:"등", place:["gym"] },
-          { id:"pulldown_row", name:"암풀다운 / 벤트오버 덤벨로우", target:6, muscle:"등", place:["home","gym"] }
+          { id:"lat_pulldown", name:"랫풀다운", target:4, muscle:"등", place:["gym"] },
+          { id:"pulldown_row", name:"암풀다운/로우", target:6, muscle:"등", place:["home","gym"] }
         ]},
         { group:"하체", items:[
-          { id:"squat", name:"스미스머신 스쿼트 / 덤벨 스쿼트", target:4, muscle:"하체", place:["home","gym"] },
-          { id:"leg_extension", name:"레그 익스텐션 / 이너싸이", target:3, muscle:"하체", place:["gym"] },
-          { id:"leg_curl", name:"레그 컬 / 덤벨 스티프 데드리프트", target:3, muscle:"하체", place:["home","gym"] }
+          { id:"squat", name:"스쿼트", target:4, muscle:"하체", place:["home","gym"] },
+          { id:"leg_extension", name:"레그 익스텐션", target:3, muscle:"하체", place:["gym"] },
+          { id:"leg_curl", name:"레그 컬", target:3, muscle:"하체", place:["home","gym"] }
         ]},
         { group:"복근/종아리", items:[
-          { id:"crunch", name:"크런치 / 케이블 크런치", target:6, muscle:"복근", place:["home","gym"] },
-          { id:"calf_raise", name:"덤벨 카프 레이즈 / 스미스머신 카프 레이즈", target:6, muscle:"종아리", place:["home","gym"] }
+          { id:"crunch", name:"크런치", target:6, muscle:"복근", place:["home","gym"] },
+          { id:"calf_raise", name:"카프 레이즈", target:6, muscle:"종아리", place:["home","gym"] }
         ]}
       ]
     };
 
     let db = loadDB();
     let selectedDate = TODAY;
-    let calendarCursor = new Date(TODAY);
-    let activeStatTab = "month";
-    let exerciseFilter = "all";
+    let calendarCursor = new Date(TODAY + "T00:00:00");
+    let currentScreen = "home";
+    let statsMode = "week";
     let deferredPrompt = null;
+    let toastTimer = null;
 
     function loadDB(){
       const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return { dailyLogs:{}, sorenessLogs:[] };
+      const base = {
+        dailyLogs:{},
+        sorenessLogs:[],
+        settings:{ goals:{...CONFIG.defaultGoals}, placeFilter:"all" }
+      };
+      if(!raw) return base;
+
       try{
-        const x = JSON.parse(raw);
-        x.dailyLogs ||= {};
-        x.sorenessLogs ||= [];
-        return x;
+        const parsed = JSON.parse(raw);
+        parsed.dailyLogs ||= {};
+        parsed.sorenessLogs ||= [];
+        parsed.settings ||= {};
+        parsed.settings.goals ||= { ...CONFIG.defaultGoals };
+        parsed.settings.placeFilter ||= "all";
+
+        Object.keys(parsed.dailyLogs).forEach(date => {
+          const log = parsed.dailyLogs[date];
+          if(typeof log.sleep === "number" && !log.sleepMeta){
+            log.sleepMeta = { start:null, end:null, duration:log.sleep };
+          }
+          if(!log.sleepMeta){
+            log.sleepMeta = { start:null, end:null, duration:null };
+          }
+          log.exercises ||= {};
+          log.note ||= "";
+        });
+
+        return parsed;
       }catch(e){
-        return { dailyLogs:{}, sorenessLogs:[] };
+        return base;
       }
     }
-    function saveDB(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+
+    function saveDB(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    }
+
+    function showToast(message){
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1800);
+    }
 
     function fmt(date){
       const d = new Date(date);
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
     }
+
     function pdate(str){ return new Date(str + "T00:00:00"); }
     function dayName(str){ return ["일","월","화","수","목","금","토"][pdate(str).getDay()] + "요일"; }
+
     function mondayOf(str){
       const d = pdate(str);
       const g = d.getDay();
@@ -510,720 +827,683 @@
       d.setDate(d.getDate()+diff);
       return fmt(d);
     }
+
     function weekRange(str){
       const m = pdate(mondayOf(str));
-      const s = new Date(m); s.setDate(s.getDate()+6);
+      const s = new Date(m);
+      s.setDate(s.getDate()+6);
       return `${fmt(m)} ~ ${fmt(s)}`;
     }
+
     function ensureLog(ds){
-      if(!db.dailyLogs[ds]) db.dailyLogs[ds] = { exercises:{}, sleep:null, note:"" };
-      CONFIG.groups.forEach(g=>g.items.forEach(it=>{
-        if(typeof db.dailyLogs[ds].exercises[it.id] !== "number") db.dailyLogs[ds].exercises[it.id] = 0;
+      if(!db.dailyLogs[ds]){
+        db.dailyLogs[ds] = {
+          exercises:{},
+          sleep:null,
+          sleepMeta:{ start:null, end:null, duration:null },
+          note:""
+        };
+      }
+      CONFIG.groups.forEach(g => g.items.forEach(it => {
+        if(typeof db.dailyLogs[ds].exercises[it.id] !== "number"){
+          db.dailyLogs[ds].exercises[it.id] = 0;
+        }
       }));
-      if(!("sleep" in db.dailyLogs[ds])) db.dailyLogs[ds].sleep = null;
-      if(!("note" in db.dailyLogs[ds])) db.dailyLogs[ds].note = "";
+      if(!db.dailyLogs[ds].sleepMeta){
+        db.dailyLogs[ds].sleepMeta = { start:null, end:null, duration:null };
+      }
+      if(typeof db.dailyLogs[ds].note !== "string") db.dailyLogs[ds].note = "";
     }
+
+    function allItems(){
+      return CONFIG.groups.flatMap(g => g.items);
+    }
+
     function getItem(id){
-      for(const g of CONFIG.groups) for(const it of g.items) if(it.id===id) return it;
-      return null;
+      return allItems().find(x => x.id === id);
     }
-    function dayTotal(ds){
+
+    function getDayTotal(ds){
       ensureLog(ds);
       return Object.values(db.dailyLogs[ds].exercises).reduce((a,b)=>a+Number(b||0),0);
     }
-    function weekDates(ds){
+
+    function getWeekDates(ds){
       const m = pdate(mondayOf(ds));
-      return Array.from({length:7},(_,i)=>{ const x=new Date(m); x.setDate(m.getDate()+i); return fmt(x); });
-    }
-    function weekTotals(ds){
-      const dates = weekDates(ds);
-      const out = { total:0, workoutDays:0, muscles:{ "어깨":0,"이두":0,"삼두":0,"가슴":0,"등":0,"하체":0,"복근":0,"종아리":0 } };
-      dates.forEach(d=>{
-        ensureLog(d);
-        if(dayTotal(d)>0) out.workoutDays++;
-        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets])=>{
-          const n=Number(sets||0); out.total+=n;
-          const item=getItem(id); if(item) out.muscles[item.muscle]+=n;
-        });
+      return Array.from({length:7}, (_,i) => {
+        const x = new Date(m);
+        x.setDate(m.getDate()+i);
+        return fmt(x);
       });
-      return out;
     }
-    function monthDates(y,m){
+
+    function getMonthDates(y,m){
       const last = new Date(y,m+1,0).getDate();
       return Array.from({length:last},(_,i)=>fmt(new Date(y,m,i+1)));
     }
-    function sleepAverage(dates){
-      const vals = dates.map(d=>db.dailyLogs[d]?.sleep).filter(v=>typeof v==="number" && !isNaN(v));
-      if(!vals.length) return 0;
-      return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10;
+
+    function getSleepDuration(start,end){
+      if(!start || !end) return null;
+      const [sh,sm] = start.split(":").map(Number);
+      const [eh,em] = end.split(":").map(Number);
+      let startMin = sh*60 + sm;
+      let endMin = eh*60 + em;
+      if(endMin < startMin) endMin += 24*60;
+      const dur = (endMin - startMin) / 60;
+      return Math.round(dur * 10) / 10;
     }
-    function monthStats(cursor){
-      const y = cursor.getFullYear(), m = cursor.getMonth();
-      const dates = monthDates(y,m);
-      const totalSets = dates.reduce((a,d)=>a+dayTotal(d),0);
-      const workoutDays = dates.filter(d=>dayTotal(d)>0).length;
-      const sleepAvg = sleepAverage(dates);
+
+    function getWeekStats(ds){
+      const dates = getWeekDates(ds);
       const muscles = { "어깨":0,"이두":0,"삼두":0,"가슴":0,"등":0,"하체":0,"복근":0,"종아리":0 };
-      dates.forEach(d=>{
+      let totalSets = 0;
+      let workoutDays = 0;
+
+      dates.forEach(d => {
         ensureLog(d);
-        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets])=>{
-          const it=getItem(id); if(it) muscles[it.muscle]+=Number(sets||0);
+        const total = getDayTotal(d);
+        if(total > 0) workoutDays++;
+        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets]) => {
+          const item = getItem(id);
+          if(item){
+            muscles[item.muscle] += Number(sets || 0);
+            totalSets += Number(sets || 0);
+          }
         });
       });
-      return { dates,totalSets,workoutDays,sleepAvg,muscles };
-    }
-    function weekdayStats(){
-      const arr=["일","월","화","수","목","금","토"].map(n=>({name:n,days:0,sets:0,sleep:[]}));
-      Object.keys(db.dailyLogs).forEach(d=>{
-        const idx=pdate(d).getDay();
-        const total=dayTotal(d);
-        arr[idx].sets += total;
-        if(total>0) arr[idx].days += 1;
-        const sl=db.dailyLogs[d]?.sleep;
-        if(typeof sl==="number") arr[idx].sleep.push(sl);
-      });
-      arr.forEach(x=>{
-        x.sleepAvg = x.sleep.length ? Math.round(x.sleep.reduce((a,b)=>a+b,0)/x.sleep.length*10)/10 : 0;
-      });
-      return arr;
-    }
-    function activeSoreness(){ return db.sorenessLogs.filter(x=>!x.recoveredAt).sort((a,b)=>b.startedAt.localeCompare(a.startedAt)); }
-    function resolvedSoreness(){ return db.sorenessLogs.filter(x=>x.recoveredAt).sort((a,b)=>b.recoveredAt.localeCompare(a.recoveredAt)); }
-    function durationDays(start,end){
-      return Math.floor((pdate(end)-pdate(start))/(1000*60*60*24))+1;
+
+      return { dates, muscles, totalSets, workoutDays };
     }
 
-    function renderHeader(){
+    function getMonthStats(cursor){
+      const y = cursor.getFullYear();
+      const m = cursor.getMonth();
+      const dates = getMonthDates(y,m);
+      const muscles = { "어깨":0,"이두":0,"삼두":0,"가슴":0,"등":0,"하체":0,"복근":0,"종아리":0 };
+      let totalSets = 0;
+      let workoutDays = 0;
+
+      dates.forEach(d => {
+        ensureLog(d);
+        const total = getDayTotal(d);
+        if(total > 0) workoutDays++;
+        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets]) => {
+          const item = getItem(id);
+          if(item){
+            muscles[item.muscle] += Number(sets || 0);
+            totalSets += Number(sets || 0);
+          }
+        });
+      });
+
+      return { dates, muscles, totalSets, workoutDays };
+    }
+
+    function switchScreen(name){
+      currentScreen = name;
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(`screen-${name}`).classList.add("active");
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.screen === name);
+      });
+
+      if(name === "home") renderHome();
+      if(name === "calendar") renderCalendar();
+      if(name === "stats") renderStats();
+      if(name === "settings") renderSettings();
+    }
+
+    function renderHome(){
       ensureLog(selectedDate);
-      document.getElementById("selectedDateLabel").textContent = `${selectedDate} (${dayName(selectedDate)})`;
-      document.getElementById("selectedWeekLabel").textContent = weekRange(selectedDate);
-      document.getElementById("selectedDatePill").textContent = `📅 ${selectedDate}`;
-      document.getElementById("selectedWeekPill").textContent = `🗓️ ${weekRange(selectedDate)}`;
+      const log = db.dailyLogs[selectedDate];
+      document.getElementById("homeDateLabel").textContent = `${selectedDate} (${dayName(selectedDate)})`;
+      document.getElementById("homeWeekLabel").textContent = weekRange(selectedDate);
+      document.getElementById("heroDaySets").textContent = getDayTotal(selectedDate);
+      document.getElementById("heroSleep").textContent = `${log.sleepMeta?.duration ?? 0}h`;
 
-      document.getElementById("dayTotal").textContent = dayTotal(selectedDate);
-      const w = weekTotals(selectedDate);
-      document.getElementById("weekTotal").textContent = w.total;
-      document.getElementById("weekDaysHero").textContent = w.workoutDays;
-      document.getElementById("sleepHero").textContent = `${db.dailyLogs[selectedDate].sleep ?? 0}h`;
+      document.getElementById("dayNote").value = log.note || "";
+      document.getElementById("sleepStart").value = log.sleepMeta?.start || "";
+      document.getElementById("sleepEnd").value = log.sleepMeta?.end || "";
+      updateSleepPill();
 
-      const shoulderRemain = Math.max(0, CONFIG.goals["어깨"] - w.muscles["어깨"]);
-      const biRemain = Math.max(0, CONFIG.goals["이두"] - w.muscles["이두"]);
-      const triRemain = Math.max(0, CONFIG.goals["삼두"] - w.muscles["삼두"]);
-      document.getElementById("weeklyFeedback").innerHTML =
-        `이번 주 기준 <strong>어깨 ${shoulderRemain}세트</strong>, <strong>팔 ${biRemain+triRemain}세트</strong> 남았습니다. ` +
-        `(이두 ${biRemain} / 삼두 ${triRemain})`;
+      const filter = db.settings.placeFilter || "all";
+      document.getElementById("homeFilter").value = filter;
 
-      const box = document.getElementById("remainingBox");
-      box.innerHTML = "";
-      ["어깨","이두","삼두","가슴","등","하체","복근","종아리"].forEach(m=>{
-        const done=w.muscles[m], target=CONFIG.goals[m], remain=Math.max(0,target-done), pct=Math.min(100,Math.round(done/target*100));
-        const div=document.createElement("div");
-        div.className="remainItem";
-        div.innerHTML=`
-          <div style="display:flex;justify-content:space-between;gap:8px"><strong>${m}</strong><span class="small">${done}/${target}</span></div>
-          <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
-          <div class="tiny" style="margin-top:6px">${remain?`${remain}세트 남음`:`목표 달성`}</div>
-        `;
-        box.appendChild(div);
-      });
-    }
+      const list = document.getElementById("homeExerciseList");
+      list.innerHTML = "";
 
-    function setFilterButtons(){
-      const map = { all:"showAllBtn", home:"presetHomeBtn", gym:"presetGymBtn" };
-      ["showAllBtn","presetHomeBtn","presetGymBtn"].forEach(id=>{
-        document.getElementById(id).classList.remove("primary");
-      });
-      document.getElementById(map[exerciseFilter]).classList.add("primary");
-    }
-
-    function renderExerciseForm(){
-      ensureLog(selectedDate);
-      setFilterButtons();
-      const root=document.getElementById("exerciseForm");
-      root.innerHTML="";
-
-      CONFIG.groups.forEach(g=>{
-        const wrap=document.createElement("div");
-        wrap.className="exerciseGroup";
-        wrap.innerHTML=`
-          <div class="exerciseHead">
-            <strong>${g.group}</strong>
-            <span class="pill">${g.group==="어깨"?"주 목표 13세트":g.group==="팔"?"이두 10 / 삼두 10":g.group==="복근/종아리"?"복근 6 / 종아리 6":"주 목표 10세트"}</span>
-          </div>
-          <div class="exerciseItems"></div>
-        `;
-        const itemsBox=wrap.querySelector(".exerciseItems");
-        let visible=0;
-
-        g.items.forEach(it=>{
-          if(exerciseFilter!=="all" && !it.place.includes(exerciseFilter)) return;
-          visible++;
-          const val=db.dailyLogs[selectedDate].exercises[it.id] || 0;
-          const row=document.createElement("div");
-          row.className="exerciseRow";
-          row.innerHTML=`
+      allItems()
+        .filter(item => filter === "all" || item.place.includes(filter))
+        .forEach(item => {
+          const val = log.exercises[item.id] || 0;
+          const row = document.createElement("div");
+          row.className = "exercise-row";
+          row.innerHTML = `
             <div>
-              <div class="exerciseName">${it.name}</div>
-              <div class="exerciseSub">운동 목표 ${it.target}세트 · 타겟 ${it.muscle}</div>
+              <div class="exercise-name">${item.name}</div>
+              <div class="exercise-sub">${item.muscle} · 주 목표 ${item.target}세트</div>
             </div>
-            <div class="inputWrap">
-              <button class="stepBtn" data-id="${it.id}" data-step="-1">-</button>
-              <input class="numInput" type="number" min="0" inputmode="numeric" value="${val}" data-id="${it.id}">
-              <button class="stepBtn" data-id="${it.id}" data-step="1">+</button>
+            <div class="stepper">
+              <button data-step="-1" data-id="${item.id}">-</button>
+              <input type="number" min="0" value="${val}" data-id="${item.id}" />
+              <button data-step="1" data-id="${item.id}">+</button>
             </div>
           `;
-          itemsBox.appendChild(row);
+          list.appendChild(row);
         });
 
-        if(visible>0) root.appendChild(wrap);
-      });
-
-      document.querySelectorAll(".numInput").forEach(inp=>{
-        inp.addEventListener("input",e=>{
-          const id=e.target.dataset.id;
-          let v=Number(e.target.value||0); if(v<0)v=0;
-          db.dailyLogs[selectedDate].exercises[id]=v;
-          liveRefresh();
-        });
-      });
-      document.querySelectorAll(".stepBtn").forEach(btn=>{
-        btn.addEventListener("click",e=>{
-          const id=e.currentTarget.dataset.id;
-          const input=document.querySelector(`.numInput[data-id="${id}"]`);
-          let v=Number(input.value||0)+Number(e.currentTarget.dataset.step);
-          if(v<0)v=0;
-          input.value=v;
-          db.dailyLogs[selectedDate].exercises[id]=v;
-          liveRefresh();
+      list.querySelectorAll("input[data-id]").forEach(input => {
+        input.addEventListener("input", e => {
+          const id = e.target.dataset.id;
+          let v = Number(e.target.value || 0);
+          if(v < 0) v = 0;
+          db.dailyLogs[selectedDate].exercises[id] = v;
+          renderHomeHeroOnly();
         });
       });
 
-      document.getElementById("sleepInput").value = db.dailyLogs[selectedDate].sleep ?? "";
-      document.getElementById("dayNote").value = db.dailyLogs[selectedDate].note || "";
-      document.getElementById("sleepInput").oninput = e=>{
-        db.dailyLogs[selectedDate].sleep = e.target.value==="" ? null : Number(e.target.value);
-        liveRefresh();
-      };
-      document.getElementById("dayNote").oninput = e=>{
-        db.dailyLogs[selectedDate].note = e.target.value;
-        liveRefresh();
-      };
+      list.querySelectorAll("button[data-step]").forEach(btn => {
+        btn.addEventListener("click", e => {
+          const id = e.target.dataset.id;
+          const step = Number(e.target.dataset.step);
+          const input = list.querySelector(`input[data-id="${id}"]`);
+          let v = Number(input.value || 0) + step;
+          if(v < 0) v = 0;
+          input.value = v;
+          db.dailyLogs[selectedDate].exercises[id] = v;
+          renderHomeHeroOnly();
+        });
+      });
+    }
+
+    function renderHomeHeroOnly(){
+      ensureLog(selectedDate);
+      document.getElementById("heroDaySets").textContent = getDayTotal(selectedDate);
+    }
+
+    function updateSleepPill(){
+      const start = document.getElementById("sleepStart").value;
+      const end = document.getElementById("sleepEnd").value;
+      const dur = getSleepDuration(start,end);
+      document.getElementById("sleepDurationPill").textContent = `${dur ?? 0}h`;
+      document.getElementById("heroSleep").textContent = `${dur ?? 0}h`;
+    }
+
+    function saveHome(){
+      ensureLog(selectedDate);
+      const start = document.getElementById("sleepStart").value || null;
+      const end = document.getElementById("sleepEnd").value || null;
+      const duration = getSleepDuration(start,end);
+
+      db.dailyLogs[selectedDate].sleepMeta = { start, end, duration };
+      db.dailyLogs[selectedDate].sleep = duration;
+      db.dailyLogs[selectedDate].note = document.getElementById("dayNote").value.trim();
+
+      saveDB();
+      renderHome();
+      renderCalendar();
+      renderStats();
+      showToast("저장되었습니다");
     }
 
     function renderCalendar(){
-      const cal=document.getElementById("calendar");
-      cal.innerHTML="";
-      const y=calendarCursor.getFullYear(), m=calendarCursor.getMonth();
-      document.getElementById("calendarTitle").textContent=`${y}년 ${m+1}월`;
+      const cal = document.getElementById("calendar");
+      cal.innerHTML = "";
 
-      ["월","화","수","목","금","토","일"].forEach(w=>{
-        const d=document.createElement("div");
-        d.className="weekday"; d.textContent=w; cal.appendChild(d);
+      const y = calendarCursor.getFullYear();
+      const m = calendarCursor.getMonth();
+      document.getElementById("calendarTitle").textContent = `${y}년 ${m+1}월`;
+
+      ["월","화","수","목","금","토","일"].forEach(w => {
+        const d = document.createElement("div");
+        d.className = "weekday";
+        d.textContent = w;
+        cal.appendChild(d);
       });
 
-      const first=new Date(y,m,1);
-      let offset=first.getDay(); offset=offset===0?6:offset-1;
-      const start=new Date(first); start.setDate(first.getDate()-offset);
+      const first = new Date(y,m,1);
+      let offset = first.getDay();
+      offset = offset === 0 ? 6 : offset - 1;
+      const start = new Date(first);
+      start.setDate(first.getDate() - offset);
 
       for(let i=0;i<42;i++){
-        const d=new Date(start); d.setDate(start.getDate()+i);
-        const ds=fmt(d); ensureLog(ds);
-        const total=dayTotal(ds), sleep=db.dailyLogs[ds].sleep, note=db.dailyLogs[ds].note?.trim();
-        const sore=db.sorenessLogs.filter(x=>ds>=x.startedAt && (!x.recoveredAt || ds<=x.recoveredAt));
-        const rec=db.sorenessLogs.filter(x=>x.recoveredAt===ds);
+        const d = new Date(start);
+        d.setDate(start.getDate()+i);
+        const ds = fmt(d);
+        ensureLog(ds);
 
-        const cell=document.createElement("div");
-        cell.className="day";
-        if(d.getMonth()!==m) cell.classList.add("other");
-        if(ds===TODAY) cell.classList.add("today");
-        if(ds===selectedDate) cell.classList.add("selected");
-        cell.innerHTML=`
-          <div class="dayTop">
-            <span class="dayNum">${d.getDate()}</span>
-            <span class="tiny">${dayName(ds).replace("요일","")}</span>
+        const total = getDayTotal(ds);
+        const sleep = db.dailyLogs[ds]?.sleepMeta?.duration;
+        const activeSore = db.sorenessLogs.filter(x => ds >= x.startedAt && (!x.recoveredAt || ds <= x.recoveredAt));
+
+        const cell = document.createElement("div");
+        cell.className = "day";
+        if(d.getMonth() !== m) cell.classList.add("other");
+        if(ds === TODAY) cell.classList.add("today");
+        if(ds === selectedDate) cell.classList.add("selected");
+        cell.innerHTML = `
+          <div class="day-top">
+            <span class="day-num">${d.getDate()}</span>
           </div>
-          <div class="badges">
-            ${total>0?`<span class="badge b-work">${total}세트</span>`:""}
-            ${typeof sleep==="number"?`<span class="badge b-sleep">${sleep}h</span>`:""}
-            ${sore.length?`<span class="badge b-sore">근육통 ${Array.from(new Set(sore.map(x=>x.group))).join(",")}</span>`:""}
-            ${rec.length?`<span class="badge b-rec">회복 ${Array.from(new Set(rec.map(x=>x.group))).join(",")}</span>`:""}
-            ${note?`<span class="badge b-note">메모</span>`:""}
+          <div class="badge-wrap">
+            ${total > 0 ? `<span class="badge b-work">운동</span>` : ""}
+            ${typeof sleep === "number" ? `<span class="badge b-sleep">${sleep}h</span>` : ""}
+            ${activeSore.length ? `<span class="badge b-sore">${activeSore.length}통</span>` : ""}
           </div>
         `;
-        cell.addEventListener("click",()=>{
-          selectedDate=ds;
-          renderAll();
+        cell.addEventListener("click", () => {
+          selectedDate = ds;
+          switchScreen("home");
         });
         cal.appendChild(cell);
       }
     }
 
-    function renderSoreness(){
-      const active=activeSoreness(), done=resolvedSoreness();
-      document.getElementById("activeSoreCount").textContent=`${active.length}개 진행중`;
+    function renderStats(){
+      const isWeek = statsMode === "week";
+      const data = isWeek ? getWeekStats(selectedDate) : getMonthStats(calendarCursor);
 
-      const a=document.getElementById("activeSoreList");
-      a.innerHTML="";
-      if(!active.length) a.innerHTML=`<div class="empty">진행 중인 근육통 기록이 없습니다.</div>`;
-      active.forEach(x=>{
-        const days=durationDays(x.startedAt, selectedDate);
-        const div=document.createElement("div");
-        div.className="item";
-        div.innerHTML=`
-          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
-            <div>
-              <strong>${x.group}</strong>
-              <div class="small">시작: ${x.startedAt} · 경과 ${days}일</div>
-            </div>
-            <button class="green" data-resolve="${x.id}">회복됨</button>
+      document.getElementById("statsRangeLabel").textContent =
+        isWeek
+          ? weekRange(selectedDate)
+          : `${calendarCursor.getFullYear()}-${String(calendarCursor.getMonth()+1).padStart(2,"0")}`;
+
+      document.getElementById("statsTotalSets").textContent = data.totalSets;
+      document.getElementById("statsWorkoutDays").textContent = data.workoutDays;
+
+      const goals = db.settings.goals || CONFIG.defaultGoals;
+      const progressList = document.getElementById("progressList");
+      progressList.innerHTML = "";
+
+      Object.entries(goals).forEach(([muscle,target]) => {
+        const val = data.muscles[muscle] || 0;
+        const pct = Math.min(100, Math.round((val/target)*100));
+        const div = document.createElement("div");
+        div.className = "progress-card";
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:8px;">
+            <strong>${muscle}</strong>
+            <span class="small">${val}/${target}</span>
           </div>
-        `;
-        a.appendChild(div);
-      });
-      a.querySelectorAll("[data-resolve]").forEach(btn=>{
-        btn.addEventListener("click",e=>{
-          const id=e.target.dataset.resolve;
-          const item=db.sorenessLogs.find(v=>v.id===id);
-          if(item){ item.recoveredAt=selectedDate; saveDB(); renderAll(); }
-        });
-      });
-
-      const r=document.getElementById("resolvedSoreList");
-      r.innerHTML="";
-      if(!done.length) r.innerHTML=`<div class="empty">회복 완료 기록이 없습니다.</div>`;
-      done.slice(0,12).forEach(x=>{
-        const days=durationDays(x.startedAt,x.recoveredAt);
-        const div=document.createElement("div");
-        div.className="item";
-        div.innerHTML=`<strong>${x.group}</strong><div class="small">${x.startedAt} → ${x.recoveredAt} · 총 ${days}일</div>`;
-        r.appendChild(div);
-      });
-    }
-
-    function renderWeeklySummary(){
-      const root=document.getElementById("weeklySummary");
-      root.innerHTML="";
-      document.getElementById("weekRangeText").textContent=weekRange(selectedDate);
-
-      const w=weekTotals(selectedDate);
-      ["어깨","이두","삼두","가슴","등","하체","복근","종아리"].forEach(m=>{
-        const done=w.muscles[m], target=CONFIG.goals[m], remain=Math.max(0,target-done), pct=Math.min(100,Math.round(done/target*100));
-        const div=document.createElement("div");
-        div.className="item";
-        div.innerHTML=`
-          <div style="display:flex;justify-content:space-between;gap:8px"><strong>${m}</strong><span class="small">${done}/${target}</span></div>
           <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
-          <div class="tiny" style="margin-top:6px">${remain?`${remain}세트 남음`:`목표 달성`}</div>
         `;
-        root.appendChild(div);
+        progressList.appendChild(div);
       });
 
-      const extra=document.createElement("div");
-      extra.className="item";
-      extra.innerHTML=`<div class="small">주간 날짜별</div>`;
-      weekDates(selectedDate).forEach(d=>{
-        const s=db.dailyLogs[d]?.sleep;
-        const span=document.createElement("span");
-        span.className="chip";
-        span.textContent=`${d.slice(5)} ${dayName(d).replace("요일","")} · ${dayTotal(d)}세트 · 수면 ${s ?? "-"}h`;
-        extra.appendChild(span);
-      });
-      root.appendChild(extra);
-    }
+      const dates = isWeek
+        ? getWeekDates(selectedDate)
+        : getMonthDates(calendarCursor.getFullYear(), calendarCursor.getMonth()).slice(-7);
 
-    function renderStatsPanel(){
-      ["statMonthBtn","statWeekdayBtn","statMuscleBtn","statSleepBtn"].forEach(id=>document.getElementById(id).classList.remove("primary"));
-      document.getElementById({month:"statMonthBtn",weekday:"statWeekdayBtn",muscle:"statMuscleBtn",sleep:"statSleepBtn"}[activeStatTab]).classList.add("primary");
+      const sleepBars = document.getElementById("sleepBars");
+      sleepBars.innerHTML = "";
+      const maxSleep = Math.max(1, ...dates.map(d => db.dailyLogs[d]?.sleepMeta?.duration || 0));
 
-      const panel=document.getElementById("statsPanel");
-      panel.innerHTML="";
-
-      if(activeStatTab==="month"){
-        const ms=monthStats(calendarCursor);
-        panel.innerHTML=`
-          <div class="grid2">
-            <div class="item"><div class="muted">월간 총 세트</div><div style="font-size:24px;font-weight:900;margin-top:4px">${ms.totalSets}</div></div>
-            <div class="item"><div class="muted">월간 운동일 수</div><div style="font-size:24px;font-weight:900;margin-top:4px">${ms.workoutDays}</div></div>
+      dates.forEach(d => {
+        const sleep = db.dailyLogs[d]?.sleepMeta?.duration || 0;
+        const pct = Math.round((sleep/maxSleep)*100);
+        const row = document.createElement("div");
+        row.className = "bar-row";
+        row.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:8px;">
+            <strong>${d.slice(5)}</strong>
+            <span class="small">${sleep}h</span>
           </div>
-          <div class="item" style="margin-top:8px"><div class="muted">월간 평균 수면</div><div style="font-size:24px;font-weight:900;margin-top:4px">${ms.sleepAvg}h</div></div>
+          <div class="hbar"><div class="hfill" style="width:${pct}%"></div></div>
         `;
-      }
+        sleepBars.appendChild(row);
+      });
 
-      if(activeStatTab==="weekday"){
-        const arr=weekdayStats();
-        const max=Math.max(1,...arr.map(x=>x.sets));
-        const wrap=document.createElement("div"); wrap.className="bars";
-        arr.forEach(x=>{
-          const div=document.createElement("div");
-          div.className="barRow";
-          div.innerHTML=`
-            <div style="display:flex;justify-content:space-between;gap:8px"><strong>${x.name}요일</strong><span class="small">운동일 ${x.days}회 · 총 ${x.sets}세트 · 평균 수면 ${x.sleepAvg}h</span></div>
-            <div class="hbar"><div class="hfill" style="width:${Math.round(x.sets/max*100)}%"></div></div>
-          `;
-          wrap.appendChild(div);
-        });
-        panel.appendChild(wrap);
-      }
-
-      if(activeStatTab==="muscle"){
-        const ms=monthStats(calendarCursor);
-        const max=Math.max(1,...Object.values(ms.muscles));
-        const wrap=document.createElement("div"); wrap.className="bars";
-        Object.entries(ms.muscles).forEach(([k,v])=>{
-          const div=document.createElement("div");
-          div.className="barRow";
-          div.innerHTML=`
-            <div style="display:flex;justify-content:space-between;gap:8px"><strong>${k}</strong><span class="small">${v}세트</span></div>
-            <div class="hbar"><div class="hfill" style="width:${Math.round(v/max*100)}%"></div></div>
-          `;
-          wrap.appendChild(div);
-        });
-        panel.appendChild(wrap);
-      }
-
-      if(activeStatTab==="sleep"){
-        const y=calendarCursor.getFullYear(), m=calendarCursor.getMonth();
-        const dates=monthDates(y,m);
-        const avg=sleepAverage(dates);
-        const vals=dates.map(d=>({d,s:db.dailyLogs[d]?.sleep})).filter(v=>typeof v.s==="number");
-        const max=Math.max(1,...vals.map(v=>v.s),1);
-        const box=document.createElement("div");
-        box.innerHTML=`<div class="item"><div class="muted">월간 평균 수면</div><div style="font-size:24px;font-weight:900;margin-top:4px">${avg}h</div></div>`;
-        panel.appendChild(box);
-
-        const wrap=document.createElement("div");
-        wrap.className="bars"; wrap.style.marginTop="8px";
-        if(!vals.length){
-          wrap.innerHTML=`<div class="empty">이번 달 수면 기록이 없습니다.</div>`;
-        }else{
-          vals.slice(-12).forEach(v=>{
-            const div=document.createElement("div");
-            div.className="barRow";
-            div.innerHTML=`
-              <div style="display:flex;justify-content:space-between;gap:8px"><strong>${v.d.slice(5)}</strong><span class="small">${v.s}h</span></div>
-              <div class="hbar"><div class="hfill" style="width:${Math.round(v.s/max*100)}%"></div></div>
-            `;
-            wrap.appendChild(div);
-          });
-        }
-        panel.appendChild(wrap);
-      }
+      document.getElementById("statsWeekBtn").classList.toggle("active", isWeek);
+      document.getElementById("statsMonthBtn").classList.toggle("active", !isWeek);
     }
 
-    function renderHistory(){
-      const root=document.getElementById("historyList");
-      root.innerHTML="";
-      const dates=Object.keys(db.dailyLogs)
-        .filter(d=>dayTotal(d)>0 || db.dailyLogs[d].note || typeof db.dailyLogs[d].sleep==="number")
-        .sort((a,b)=>b.localeCompare(a))
-        .slice(0,20);
+    function renderSettings(){
+      const goalInputs = document.getElementById("goalInputs");
+      goalInputs.innerHTML = "";
+      const goals = db.settings.goals || CONFIG.defaultGoals;
 
-      if(!dates.length){
-        root.innerHTML=`<div class="empty">최근 기록이 없습니다.</div>`;
-        return;
-      }
-      dates.forEach(d=>{
-        const total=dayTotal(d), sl=db.dailyLogs[d].sleep, note=db.dailyLogs[d].note;
-        const item=document.createElement("div");
-        item.className="item";
-        item.innerHTML=`
-          <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
+      Object.entries(goals).forEach(([muscle,val]) => {
+        const wrap = document.createElement("div");
+        wrap.innerHTML = `
+          <label class="small">${muscle}</label>
+          <input type="number" min="0" value="${val}" data-goal="${muscle}" />
+        `;
+        goalInputs.appendChild(wrap);
+      });
+
+      goalInputs.querySelectorAll("input[data-goal]").forEach(input => {
+        input.addEventListener("input", e => {
+          const key = e.target.dataset.goal;
+          db.settings.goals[key] = Math.max(0, Number(e.target.value || 0));
+          saveDB();
+        });
+      });
+
+      const active = db.sorenessLogs.filter(x => !x.recoveredAt).sort((a,b)=>b.startedAt.localeCompare(a.startedAt));
+      const list = document.getElementById("activeSoreList");
+      list.innerHTML = active.length ? "" : `<div class="empty">진행 중인 근육통 기록이 없습니다.</div>`;
+
+      active.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
             <div>
-              <strong>${d} (${dayName(d)})</strong>
-              <div class="small">총 ${total}세트 · 수면 ${sl ?? "-"}h</div>
+              <strong>${item.group}</strong>
+              <div class="small">시작: ${item.startedAt}</div>
             </div>
-            <button data-go="${d}">보기</button>
+            <button data-resolve="${item.id}" class="green">회복됨</button>
           </div>
-          ${note?`<div class="small" style="margin-top:8px">메모: ${escapeHtml(note)}</div>`:""}
         `;
-        root.appendChild(item);
+        list.appendChild(div);
       });
-      root.querySelectorAll("[data-go]").forEach(btn=>{
-        btn.addEventListener("click",e=>{
-          selectedDate=e.target.dataset.go;
-          calendarCursor=new Date(selectedDate);
-          renderAll();
+
+      list.querySelectorAll("[data-resolve]").forEach(btn => {
+        btn.addEventListener("click", e => {
+          const id = e.target.dataset.resolve;
+          const target = db.sorenessLogs.find(x => x.id === id);
+          if(target){
+            target.recoveredAt = selectedDate;
+            saveDB();
+            renderSettings();
+            renderCalendar();
+            showToast("회복 처리되었습니다");
+          }
         });
       });
     }
 
-    function liveRefresh(){
-      renderHeader();
-      renderWeeklySummary();
-      renderCalendar();
-      renderStatsPanel();
-    }
-
-    function saveSelected(){ ensureLog(selectedDate); saveDB(); renderAll(); alert(`${selectedDate} 저장 완료`); }
-    function clearSelectedDay(){
-      if(!confirm(`${selectedDate} 기록을 초기화할까요?`)) return;
-      ensureLog(selectedDate);
-      Object.keys(db.dailyLogs[selectedDate].exercises).forEach(id=>db.dailyLogs[selectedDate].exercises[id]=0);
-      db.dailyLogs[selectedDate].sleep=null;
-      db.dailyLogs[selectedDate].note="";
-      saveDB(); renderAll();
-    }
-    function copyPrevious(){
-      const dates=Object.keys(db.dailyLogs).filter(d=>d<selectedDate && dayTotal(d)>0).sort((a,b)=>b.localeCompare(a));
-      if(!dates.length) return alert("복사할 이전 기록이 없습니다.");
-      const prev=dates[0];
-      ensureLog(prev); ensureLog(selectedDate);
-      db.dailyLogs[selectedDate].exercises=JSON.parse(JSON.stringify(db.dailyLogs[prev].exercises));
-      db.dailyLogs[selectedDate].sleep=db.dailyLogs[prev].sleep;
-      db.dailyLogs[selectedDate].note=db.dailyLogs[prev].note;
-      saveDB(); renderAll(); alert(`${prev} 기록 복사 완료`);
-    }
-    function startSore(){
-      db.sorenessLogs.push({
-        id:(crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())),
-        group:document.getElementById("soreGroup").value,
-        startedAt:selectedDate,
-        recoveredAt:null
-      });
-      saveDB(); renderAll();
-    }
-
-    function escapeHtml(str){
-      return String(str).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-    }
-
-    function exportData(){
-      const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url;a.download="workout_tracker_backup.json";a.click();
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(db,null,2)], { type:"application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "workout_tracker_backup.json";
+      a.click();
       URL.revokeObjectURL(url);
+      showToast("JSON 백업을 저장했어요");
     }
-    function importData(file){
-      const r=new FileReader();
-      r.onload=e=>{
+
+    function importJSON(file){
+      const reader = new FileReader();
+      reader.onload = e => {
         try{
-          const x=JSON.parse(e.target.result);
-          if(!x.dailyLogs || !x.sorenessLogs) return alert("올바른 백업 파일이 아닙니다.");
-          db=x; saveDB(); renderAll(); alert("복원 완료");
-        }catch(err){ alert("파일 읽기 오류"); }
+          const parsed = JSON.parse(e.target.result);
+          if(!parsed.dailyLogs || !parsed.sorenessLogs){
+            showToast("올바른 백업 파일이 아닙니다");
+            return;
+          }
+          db = loadDBMerge(parsed);
+          saveDB();
+          renderAll();
+          showToast("가져오기 완료");
+        }catch(err){
+          showToast("파일 읽기 오류");
+        }
       };
-      r.readAsText(file);
+      reader.readAsText(file);
     }
+
+    function loadDBMerge(parsed){
+      parsed.settings ||= {};
+      parsed.settings.goals ||= { ...CONFIG.defaultGoals };
+      parsed.settings.placeFilter ||= "all";
+      Object.keys(parsed.dailyLogs || {}).forEach(date => {
+        const log = parsed.dailyLogs[date];
+        log.exercises ||= {};
+        log.note ||= "";
+        if(typeof log.sleep === "number" && !log.sleepMeta){
+          log.sleepMeta = { start:null, end:null, duration:log.sleep };
+        }
+        if(!log.sleepMeta){
+          log.sleepMeta = { start:null, end:null, duration:null };
+        }
+      });
+      return parsed;
+    }
+
     function clearAll(){
       if(!confirm("전체 데이터를 삭제할까요?")) return;
-      db={dailyLogs:{},sorenessLogs:[]}; saveDB(); renderAll();
-    }
-
-    function reportDates(range){
-      if(range==="week") return weekDates(selectedDate);
-      if(range==="month") return monthDates(calendarCursor.getFullYear(), calendarCursor.getMonth());
-      return Object.keys(db.dailyLogs).sort();
-    }
-
-    function summarizeDates(dates){
-      const muscles={ "어깨":0,"이두":0,"삼두":0,"가슴":0,"등":0,"하체":0,"복근":0,"종아리":0 };
-      let totalSets=0, workoutDays=0;
-      dates.forEach(d=>{
-        ensureLog(d);
-        const t=dayTotal(d); if(t>0) workoutDays++;
-        totalSets += t;
-        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets])=>{
-          const item=getItem(id);
-          if(item) muscles[item.muscle]+=Number(sets||0);
-        });
-      });
-      return {
-        totalSets,
-        workoutDays,
-        sleepAvg:sleepAverage(dates),
-        muscles
+      db = {
+        dailyLogs:{},
+        sorenessLogs:[],
+        settings:{ goals:{...CONFIG.defaultGoals}, placeFilter:"all" }
       };
+      saveDB();
+      renderAll();
+      showToast("전체 데이터를 삭제했어요");
     }
 
-    function buildMarkdownReport(){
-      const range=document.getElementById("reportRange").value;
-      const title=document.getElementById("reportTitle").value.trim() || "운동 보고서";
-      const dates=reportDates(range);
-      const sum=summarizeDates(dates);
+    function buildReportMarkdown(){
+      const isWeek = statsMode === "week";
+      const dates = isWeek ? getWeekDates(selectedDate) : getMonthDates(calendarCursor.getFullYear(), calendarCursor.getMonth());
+      const data = isWeek ? getWeekStats(selectedDate) : getMonthStats(calendarCursor);
 
-      let md = `# ${title}\n\n`;
+      let md = `# ${document.getElementById("reportTitle").value.trim() || "운동 보고서"}\n\n`;
+      md += `- 범위: ${isWeek ? "주간" : "월간"}\n`;
       md += `- 생성일: ${TODAY}\n`;
-      md += `- 보고서 범위: ${range}\n`;
-      md += `- 날짜 범위: ${dates[0] || "-"} ~ ${dates[dates.length-1] || "-"}\n\n`;
+      md += `- 총 세트: ${data.totalSets}\n`;
+      md += `- 운동일 수: ${data.workoutDays}\n\n`;
+      md += `## 부위별 세트\n`;
+      Object.entries(data.muscles).forEach(([k,v]) => md += `- ${k}: ${v}세트\n`);
+      md += `\n## 날짜별 기록\n`;
 
-      md += `## 요약\n\n`;
-      md += `- 총 세트: ${sum.totalSets}\n`;
-      md += `- 운동일 수: ${sum.workoutDays}\n`;
-      md += `- 평균 수면: ${sum.sleepAvg}h\n\n`;
-
-      md += `## 부위별 세트\n\n`;
-      Object.entries(sum.muscles).forEach(([k,v])=>{
-        md += `- ${k}: ${v}세트\n`;
-      });
-
-      md += `\n## 날짜별 기록\n\n`;
-      dates.forEach(d=>{
+      dates.forEach(d => {
         ensureLog(d);
-        const total=dayTotal(d);
-        const sleep=db.dailyLogs[d].sleep ?? "-";
-        const note=db.dailyLogs[d].note || "";
-        const exerciseLines=Object.entries(db.dailyLogs[d].exercises)
-          .filter(([,v])=>Number(v)>0)
-          .map(([id,v])=>`  - ${getItem(id)?.name || id}: ${v}세트`);
-        if(total===0 && sleep==="-" && !note) return;
-        md += `### ${d} (${dayName(d)})\n`;
+        const total = getDayTotal(d);
+        const sleep = db.dailyLogs[d].sleepMeta?.duration;
+        const note = db.dailyLogs[d].note;
+        if(total === 0 && !sleep && !note) return;
+        md += `\n### ${d} (${dayName(d)})\n`;
         md += `- 총 세트: ${total}\n`;
-        md += `- 수면: ${sleep}h\n`;
+        md += `- 수면: ${sleep ?? "-"}h\n`;
         if(note) md += `- 메모: ${note}\n`;
-        if(exerciseLines.length){
-          md += `- 운동 내역:\n${exerciseLines.join("\n")}\n`;
-        }
-        md += `\n`;
-      });
-
-      md += `## 회복 기록\n\n`;
-      if(!db.sorenessLogs.length){
-        md += `- 없음\n`;
-      }else{
-        db.sorenessLogs.forEach(s=>{
-          md += `- ${s.group}: ${s.startedAt} ~ ${s.recoveredAt || "진행 중"}\n`;
+        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets]) => {
+          if(Number(sets) > 0){
+            md += `  - ${getItem(id)?.name || id}: ${sets}세트\n`;
+          }
         });
-      }
+      });
 
       return md;
     }
 
-    function buildHtmlReport(){
-      const range=document.getElementById("reportRange").value;
-      const title=(document.getElementById("reportTitle").value.trim() || "운동 보고서");
-      const dates=reportDates(range);
-      const sum=summarizeDates(dates);
+    function buildReportHTML(){
+      const title = document.getElementById("reportTitle").value.trim() || "운동 보고서";
+      const isWeek = statsMode === "week";
+      const dates = isWeek ? getWeekDates(selectedDate) : getMonthDates(calendarCursor.getFullYear(), calendarCursor.getMonth());
+      const data = isWeek ? getWeekStats(selectedDate) : getMonthStats(calendarCursor);
 
-      const rows = dates.map(d=>{
+      const rows = dates.map(d => {
         ensureLog(d);
-        const total=dayTotal(d);
-        const sleep=db.dailyLogs[d].sleep ?? "-";
-        const note=escapeHtml(db.dailyLogs[d].note || "");
-        const list = Object.entries(db.dailyLogs[d].exercises)
-          .filter(([,v])=>Number(v)>0)
-          .map(([id,v])=>`<li>${escapeHtml(getItem(id)?.name || id)}: ${v}세트</li>`)
+        const total = getDayTotal(d);
+        const sleep = db.dailyLogs[d].sleepMeta?.duration;
+        const note = db.dailyLogs[d].note;
+        if(total === 0 && !sleep && !note) return "";
+        const ex = Object.entries(db.dailyLogs[d].exercises)
+          .filter(([,v]) => Number(v) > 0)
+          .map(([id,v]) => `<li>${escapeHtml(getItem(id)?.name || id)}: ${v}세트</li>`)
           .join("");
-        if(total===0 && sleep==="-" && !note) return "";
         return `
-          <section class="day">
+          <section class="card">
             <h3>${d} (${dayName(d)})</h3>
-            <p><strong>총 세트:</strong> ${total} / <strong>수면:</strong> ${sleep}h</p>
-            ${note ? `<p><strong>메모:</strong> ${note}</p>` : ""}
-            ${list ? `<ul>${list}</ul>` : ""}
+            <p>총 세트: ${total} / 수면: ${sleep ?? "-"}h</p>
+            ${note ? `<p>메모: ${escapeHtml(note)}</p>` : ""}
+            ${ex ? `<ul>${ex}</ul>` : ""}
           </section>
         `;
       }).join("");
-
-      const soreness = db.sorenessLogs.length
-        ? `<ul>${db.sorenessLogs.map(s=>`<li>${s.group}: ${s.startedAt} ~ ${s.recoveredAt || "진행 중"}</li>`).join("")}</ul>`
-        : `<p>없음</p>`;
 
       return `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${escapeHtml(title)}</title>
 <style>
-body{font-family:"Apple SD Gothic Neo","Malgun Gothic",sans-serif;max-width:960px;margin:0 auto;padding:24px;line-height:1.6;background:#f7f9fc;color:#17212f}
-h1,h2,h3{margin:0 0 10px}
-.card{background:#fff;border:1px solid #dbe3ee;border-radius:16px;padding:18px;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:700px){.grid{grid-template-columns:1fr}}
-.day{background:#fff;border:1px solid #dbe3ee;border-radius:16px;padding:16px;margin-bottom:12px}
-ul{margin-top:8px}
-small{color:#5e7187}
+body{font-family:sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f4f6fa;color:#17212f}
+.card{background:#fff;border:1px solid #dbe3ee;border-radius:16px;padding:16px;margin-bottom:12px}
 </style>
 </head>
 <body>
-  <h1>${escapeHtml(title)}</h1>
-  <p><small>생성일: ${TODAY} / 범위: ${range} / 날짜: ${dates[0] || "-"} ~ ${dates[dates.length-1] || "-"}</small></p>
-
-  <div class="grid">
-    <div class="card"><h2>총 세트</h2><div>${sum.totalSets}</div></div>
-    <div class="card"><h2>운동일 수</h2><div>${sum.workoutDays}</div></div>
-    <div class="card"><h2>평균 수면</h2><div>${sum.sleepAvg}h</div></div>
-    <div class="card"><h2>부위별 세트</h2>
-      <ul>
-        ${Object.entries(sum.muscles).map(([k,v])=>`<li>${k}: ${v}세트</li>`).join("")}
-      </ul>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>회복 기록</h2>
-    ${soreness}
-  </div>
-
-  <div class="card">
-    <h2>날짜별 기록</h2>
-    ${rows || "<p>기록 없음</p>"}
-  </div>
+<h1>${escapeHtml(title)}</h1>
+<div class="card">
+  <p>총 세트: ${data.totalSets}</p>
+  <p>운동일 수: ${data.workoutDays}</p>
+</div>
+${rows}
 </body>
 </html>`;
     }
 
-    function downloadText(filename, content, type){
-      const blob=new Blob([content],{type});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=url;a.download=filename;a.click();
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function downloadFile(name, content, type){
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
       URL.revokeObjectURL(url);
     }
 
     function renderAll(){
-      ensureLog(selectedDate);
-      renderHeader();
-      renderExerciseForm();
+      renderHome();
       renderCalendar();
-      renderSoreness();
-      renderWeeklySummary();
-      renderStatsPanel();
-      renderHistory();
+      renderStats();
+      renderSettings();
     }
 
-    document.getElementById("goTodayBtn").addEventListener("click",()=>{ selectedDate=TODAY; calendarCursor=new Date(TODAY); renderAll(); });
-    document.getElementById("prevMonthBtn").addEventListener("click",()=>{ calendarCursor.setMonth(calendarCursor.getMonth()-1); renderCalendar(); renderStatsPanel(); });
-    document.getElementById("nextMonthBtn").addEventListener("click",()=>{ calendarCursor.setMonth(calendarCursor.getMonth()+1); renderCalendar(); renderStatsPanel(); });
+    function setupCalendarSwipe(){
+      const wrap = document.getElementById("calendarWrap");
+      let startX = 0;
+      let startY = 0;
+      let moving = false;
 
-    document.getElementById("saveBtn").addEventListener("click",()=>{ saveSelected(); });
-    document.getElementById("copyPrevBtn").addEventListener("click",copyPrevious);
-    document.getElementById("clearDayBtn").addEventListener("click",clearSelectedDay);
+      wrap.addEventListener("touchstart", e => {
+        const t = e.changedTouches[0];
+        startX = t.clientX;
+        startY = t.clientY;
+        moving = true;
+      }, { passive:true });
 
-    document.getElementById("showAllBtn").addEventListener("click",()=>{ exerciseFilter="all"; renderExerciseForm(); });
-    document.getElementById("presetHomeBtn").addEventListener("click",()=>{ exerciseFilter="home"; renderExerciseForm(); });
-    document.getElementById("presetGymBtn").addEventListener("click",()=>{ exerciseFilter="gym"; renderExerciseForm(); });
+      wrap.addEventListener("touchend", e => {
+        if(!moving) return;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        moving = false;
 
-    document.getElementById("startSoreBtn").addEventListener("click",startSore);
+        if(Math.abs(dx) < 40) return;
+        if(Math.abs(dx) < Math.abs(dy)) return;
 
-    document.getElementById("statMonthBtn").addEventListener("click",()=>{ activeStatTab="month"; renderStatsPanel(); });
-    document.getElementById("statWeekdayBtn").addEventListener("click",()=>{ activeStatTab="weekday"; renderStatsPanel(); });
-    document.getElementById("statMuscleBtn").addEventListener("click",()=>{ activeStatTab="muscle"; renderStatsPanel(); });
-    document.getElementById("statSleepBtn").addEventListener("click",()=>{ activeStatTab="sleep"; renderStatsPanel(); });
+        if(dx < 0){
+          calendarCursor.setMonth(calendarCursor.getMonth() + 1);
+        }else{
+          calendarCursor.setMonth(calendarCursor.getMonth() - 1);
+        }
+        renderCalendar();
+        if(statsMode === "month") renderStats();
+      }, { passive:true });
+    }
 
-    document.getElementById("exportBtn").addEventListener("click",exportData);
-    document.getElementById("importBtn").addEventListener("click",()=>document.getElementById("importFile").click());
-    document.getElementById("importFile").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) importData(f); });
-    document.getElementById("clearAllBtn").addEventListener("click",clearAll);
-
-    document.getElementById("downloadMdBtn").addEventListener("click",()=>{
-      const title=(document.getElementById("reportTitle").value.trim() || "workout_report").replace(/\s+/g,"_");
-      downloadText(`${title}.md`, buildMarkdownReport(), "text/markdown;charset=utf-8");
+    // events
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchScreen(btn.dataset.screen));
     });
-    document.getElementById("downloadHtmlReportBtn").addEventListener("click",()=>{
-      const title=(document.getElementById("reportTitle").value.trim() || "workout_report").replace(/\s+/g,"_");
-      downloadText(`${title}.html`, buildHtmlReport(), "text/html;charset=utf-8");
+
+    document.getElementById("homeFilter").addEventListener("change", e => {
+      db.settings.placeFilter = e.target.value;
+      saveDB();
+      renderHome();
+    });
+
+    document.getElementById("sleepStart").addEventListener("input", updateSleepPill);
+    document.getElementById("sleepEnd").addEventListener("input", updateSleepPill);
+    document.getElementById("saveHomeBtn").addEventListener("click", saveHome);
+
+    document.getElementById("prevMonthBtn").addEventListener("click", () => {
+      calendarCursor.setMonth(calendarCursor.getMonth() - 1);
+      renderCalendar();
+      if(statsMode === "month") renderStats();
+    });
+
+    document.getElementById("nextMonthBtn").addEventListener("click", () => {
+      calendarCursor.setMonth(calendarCursor.getMonth() + 1);
+      renderCalendar();
+      if(statsMode === "month") renderStats();
+    });
+
+    document.getElementById("statsWeekBtn").addEventListener("click", () => {
+      statsMode = "week";
+      renderStats();
+    });
+
+    document.getElementById("statsMonthBtn").addEventListener("click", () => {
+      statsMode = "month";
+      renderStats();
+    });
+
+    document.getElementById("exportMdBtn").addEventListener("click", () => {
+      const title = (document.getElementById("reportTitle").value.trim() || "report").replace(/\s+/g,"_");
+      downloadFile(`${title}.md`, buildReportMarkdown(), "text/markdown;charset=utf-8");
+      showToast("Markdown 보고서를 저장했어요");
+    });
+
+    document.getElementById("exportHtmlBtn").addEventListener("click", () => {
+      const title = (document.getElementById("reportTitle").value.trim() || "report").replace(/\s+/g,"_");
+      downloadFile(`${title}.html`, buildReportHTML(), "text/html;charset=utf-8");
+      showToast("HTML 보고서를 저장했어요");
+    });
+
+    document.getElementById("startSoreBtn").addEventListener("click", () => {
+      db.sorenessLogs.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+        group: document.getElementById("soreGroup").value,
+        startedAt: selectedDate,
+        recoveredAt: null
+      });
+      saveDB();
+      renderSettings();
+      renderCalendar();
+      showToast("근육통 시작을 기록했어요");
+    });
+
+    document.getElementById("exportJsonBtn").addEventListener("click", exportJSON);
+    document.getElementById("importJsonBtn").addEventListener("click", () => document.getElementById("importFile").click());
+    document.getElementById("importFile").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if(file) importJSON(file);
+    });
+
+    document.getElementById("clearAllBtn").addEventListener("click", clearAll);
+
+    document.getElementById("goTodayBtn").addEventListener("click", () => {
+      selectedDate = TODAY;
+      calendarCursor = new Date(TODAY + "T00:00:00");
+      renderAll();
+      switchScreen("home");
+      showToast("오늘 날짜로 이동했어요");
     });
 
     // PWA install
-    window.addEventListener("beforeinstallprompt",(e)=>{
+    window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      document.getElementById("installBtn").style.display = "inline-flex";
-      document.getElementById("installHint").style.display = "block";
+      const btn = document.getElementById("installBtn");
+      btn.style.display = "block";
     });
-    document.getElementById("installBtn").addEventListener("click", async ()=>{
+
+    document.getElementById("installBtn").addEventListener("click", async () => {
       if(!deferredPrompt) return;
       deferredPrompt.prompt();
       await deferredPrompt.userChoice;
@@ -1231,13 +1511,13 @@ small{color:#5e7187}
       document.getElementById("installBtn").style.display = "none";
     });
 
-    // Register SW
     if("serviceWorker" in navigator){
-      window.addEventListener("load",()=>{
+      window.addEventListener("load", () => {
         navigator.serviceWorker.register("./service-worker.js").catch(console.error);
       });
     }
 
+    setupCalendarSwipe();
     renderAll();
   </script>
 </body>
