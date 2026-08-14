@@ -499,6 +499,7 @@ const DAY_NAMES={chest_back:'가슴+등',shoulder_arms:'어깨+팔',legs:'하체
 // ═══════════════════════════════════════════
 const STORAGE_KEY='workoutTracker_v2';
 let db={dailyLogs:{},injuryLogs:[]};
+let lastWeights={}; // { "exerciseName": lastWeight }
 let selectedDate=todayStr();
 let currentScreen='workout';
 let calendarCursor=new Date();
@@ -515,6 +516,7 @@ function loadDB(){
       const p=JSON.parse(raw);
       db.dailyLogs=p.dailyLogs||{};
       db.injuryLogs=p.injuryLogs||[];
+      lastWeights=p.lastWeights||{};
     }
   }catch(e){console.error('DB load error',e);}
 }
@@ -523,6 +525,7 @@ let saveTimer=null;
 function saveDB(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
+    db.lastWeights=lastWeights;
     localStorage.setItem(STORAGE_KEY,JSON.stringify(db));
     flashSave();
   },300);
@@ -678,7 +681,9 @@ function addSet(pi,ei){
   const log=getLog(selectedDate);
   ensureExercises(log,log.dayType);
   if(log.exercises[pi]&&log.exercises[pi].exercises[ei]){
-    log.exercises[pi].exercises[ei].sets.push({weight:0,reps:0});
+    const exName=log.exercises[pi].exercises[ei].name;
+    const defaultW=lastWeights[exName]||0;
+    log.exercises[pi].exercises[ei].sets.push({weight:defaultW,reps:0});
     saveDB();
     renderExercises();
     setTimeout(()=>{
@@ -700,6 +705,11 @@ function updateSet(pi,ei,si,field,val){
   const log=getLog(selectedDate);
   if(log.exercises[pi]&&log.exercises[pi].exercises[ei]&&log.exercises[pi].exercises[ei].sets[si]){
     log.exercises[pi].exercises[ei].sets[si][field]=parseFloat(val)||0;
+    if(field==='weight'){
+      const exName=log.exercises[pi].exercises[ei].name;
+      const w=parseFloat(val)||0;
+      if(w>0)lastWeights[exName]=w;
+    }
     saveDB();
   }
 }
@@ -960,6 +970,7 @@ document.getElementById('importInput').addEventListener('change',function(e){
 function clearAllData(){
   if(!confirm('모든 운동·부상·수면 기록이 삭제됩니다.\n정말 초기화할까요?'))return;
   db={dailyLogs:{},injuryLogs:[]};
+  lastWeights={};
   saveDB();showToast('초기화 완료');renderWorkout();
 }
 
@@ -991,6 +1002,26 @@ function showToast(msg){
 //  INIT
 // ═══════════════════════════════════════════
 loadDB();
+
+// Reconstruct lastWeights from existing logs (first load / after import)
+(function rebuildLastWeights(){
+  const dates=Object.keys(db.dailyLogs).sort();
+  dates.forEach(date=>{
+    const log=db.dailyLogs[date];
+    if(!log||!log.exercises)return;
+    log.exercises.forEach(phase=>{
+      if(!phase||!phase.exercises)return;
+      phase.exercises.forEach(ex=>{
+        if(!ex||!ex.sets||!ex.name)return;
+        // Take the last non-zero weight from the most recent set
+        for(let i=ex.sets.length-1;i>=0;i--){
+          if(ex.sets[i].weight>0){lastWeights[ex.name]=ex.sets[i].weight;break;}
+        }
+      });
+    });
+  });
+})();
+
 renderWorkout();
 
 if('serviceWorker' in navigator){
