@@ -1,1527 +1,1001 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a0f18" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="WorkoutTracker" />
-  <title>Workout Tracker Pro</title>
-  <link rel="manifest" href="./manifest.json" />
-  <style>
-    :root{
-      --bg:#0a0f18;
-      --bg-2:#0d1420;
-      --panel:rgba(20,28,42,.88);
-      --panel-2:rgba(26,37,56,.92);
-      --line:rgba(255,255,255,.08);
-      --line-2:rgba(255,255,255,.12);
-      --text:#f4f7fb;
-      --muted:#99a9bd;
-      --blue:#6ea8ff;
-      --green:#7ce3a7;
-      --yellow:#ffd36a;
-      --red:#ff8585;
-      --purple:#bfa1ff;
-      --shadow:0 10px 28px rgba(0,0,0,.28);
-      --radius:20px;
-      --radius-sm:16px;
-      --safe-top: env(safe-area-inset-top);
-      --safe-bottom: env(safe-area-inset-bottom);
-      --maxw:480px;
-    }
-
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{
-      margin:0;padding:0;
-      background:
-      radial-gradient(circle at top left, rgba(110,168,255,.12), transparent 28%),
-      radial-gradient(circle at top right, rgba(124,227,167,.09), transparent 28%),
-      linear-gradient(180deg,var(--bg),var(--bg-2));
-      color:var(--text);
-      font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-      min-height:100%;
-    }
-    body{
-      font-size:14px;
-      display:flex;
-      justify-content:center;
-    }
-
-    .app{
-      width:100%;
-      max-width:var(--maxw);
-      min-height:100dvh;
-      position:relative;
-      padding-top:calc(12px + var(--safe-top));
-      padding-bottom:calc(92px + var(--safe-bottom));
-    }
-
-    .screen{
-      display:none;
-      padding:14px;
-      animation:fade .18s ease;
-    }
-    .screen.active{display:block}
-    @keyframes fade{
-      from{opacity:.5;transform:translateY(4px)}
-      to{opacity:1;transform:translateY(0)}
-    }
-
-    .header{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:10px;
-      margin-bottom:14px;
-    }
-
-    .title{
-      font-size:22px;
-      font-weight:900;
-      letter-spacing:-.3px;
-    }
-
-    .sub{
-      color:var(--muted);
-      margin-top:4px;
-      font-size:13px;
-      line-height:1.4;
-    }
-
-    .glass{
-      background:var(--panel);
-      backdrop-filter:blur(12px);
-      -webkit-backdrop-filter:blur(12px);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-    }
-
-    .card{
-      padding:14px;
-      margin-bottom:12px;
-    }
-
-    .section-title{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      margin-bottom:10px;
-      flex-wrap:wrap;
-    }
-
-    .section-title h2,
-    .section-title h3{
-      margin:0;
-      font-size:17px;
-    }
-
-    .muted{color:var(--muted)}
-    .small{font-size:12px;color:var(--muted)}
-    .tiny{font-size:11px;color:var(--muted)}
-
-    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .col{display:grid;gap:8px}
-
-    button, input, select, textarea{
-      font:inherit;
-    }
-
-    button{
-      min-height:44px;
-      border:none;
-      border-radius:14px;
-      padding:11px 14px;
-      color:var(--text);
-      background:var(--panel-2);
-      border:1px solid var(--line);
-      cursor:pointer;
-      transition:.15s ease;
-    }
-    button:active{transform:scale(.98)}
-
-    button.primary{
-      background:linear-gradient(135deg,var(--blue),#4f86ff);
-      color:#08111d;
-      font-weight:900;
-      border:none;
-    }
-    button.green{
-      background:linear-gradient(135deg,var(--green),#5fd694);
-      color:#08140d;
-      font-weight:900;
-      border:none;
-    }
-    button.yellow{
-      background:linear-gradient(135deg,var(--yellow),#ffc24c);
-      color:#251a03;
-      font-weight:900;
-      border:none;
-    }
-    button.red{
-      background:linear-gradient(135deg,var(--red),#ff6767);
-      color:#220808;
-      font-weight:900;
-      border:none;
-    }
-    button.purple{
-      background:linear-gradient(135deg,var(--purple),#a786ff);
-      color:#1a0f2a;
-      font-weight:900;
-      border:none;
-    }
-    button.ghost{
-      background:transparent;
-    }
-
-    input, select, textarea{
-      width:100%;
-      min-height:44px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      color:var(--text);
-      padding:11px 12px;
-      outline:none;
-    }
-
-    textarea{
-      min-height:82px;
-      resize:vertical;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      border-radius:999px;
-      padding:6px 10px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .hero{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-bottom:10px;
-    }
-
-    .hero-item{
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      padding:12px;
-    }
-
-    .hero-value{
-      font-size:22px;
-      font-weight:900;
-      margin-top:4px;
-    }
-
-    .exercise-list{
-      display:grid;
-      gap:8px;
-    }
-
-    .exercise-row{
-      display:grid;
-      grid-template-columns:1fr 110px;
-      gap:8px;
-      align-items:center;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      border-radius:16px;
-      padding:10px;
-    }
-
-    .exercise-name{
-      font-weight:800;
-      font-size:14px;
-    }
-
-    .exercise-sub{
-      color:var(--muted);
-      font-size:12px;
-      margin-top:3px;
-    }
-
-    .stepper{
-      display:flex;
-      gap:6px;
-      align-items:center;
-    }
-
-    .stepper button{
-      width:44px;
-      min-width:44px;
-      padding:0;
-    }
-
-    .stepper input{
-      text-align:center;
-      padding:10px 6px;
-    }
-
-    .toggle-tabs{
-      display:flex;
-      gap:8px;
-    }
-
-    .toggle-tabs button{
-      flex:1;
-    }
-
-    .toggle-tabs button.active{
-      background:linear-gradient(135deg,var(--blue),#4f86ff);
-      color:#07101b;
-      border:none;
-      font-weight:900;
-    }
-
-    .calendar-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:10px;
-      gap:8px;
-    }
-
-    .calendar-wrap{
-      touch-action:pan-y;
-    }
-
-    .calendar{
-      display:grid;
-      grid-template-columns:repeat(7,1fr);
-      gap:6px;
-    }
-
-    .weekday{
-      text-align:center;
-      font-size:12px;
-      color:var(--muted);
-      padding:8px 0;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.03);
-      font-weight:800;
-    }
-
-    .day{
-      min-height:72px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      padding:6px;
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      cursor:pointer;
-    }
-
-    .day.other{opacity:.28}
-    .day.today{outline:2px solid var(--blue)}
-    .day.selected{border-color:var(--green)}
-    .day-top{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-    }
-    .day-num{font-weight:900;font-size:13px}
-    .badge-wrap{display:flex;flex-wrap:wrap;gap:4px}
-    .badge{
-      font-size:10px;
-      padding:2px 6px;
-      border-radius:999px;
-      border:1px solid transparent;
-      line-height:1.2;
-    }
-    .b-work{background:rgba(110,168,255,.14);color:#dbe9ff;border-color:rgba(110,168,255,.2)}
-    .b-sleep{background:rgba(191,161,255,.14);color:#eadfff;border-color:rgba(191,161,255,.2)}
-    .b-sore{background:rgba(255,211,106,.14);color:#ffefbc;border-color:rgba(255,211,106,.2)}
-
-    .progress-card{
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      border-radius:16px;
-      padding:12px;
-      margin-bottom:8px;
-    }
-
-    .progress{
-      width:100%;
-      height:10px;
-      background:#09111a;
-      border:1px solid var(--line);
-      border-radius:999px;
-      overflow:hidden;
-      margin-top:8px;
-    }
-
-    .bar{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg,var(--blue),var(--green));
-    }
-
-    .bars{
-      display:grid;
-      gap:8px;
-    }
-
-    .bar-row{
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      border-radius:16px;
-      padding:12px;
-    }
-
-    .hbar{
-      width:100%;
-      height:12px;
-      border-radius:999px;
-      overflow:hidden;
-      background:#09111a;
-      border:1px solid var(--line);
-      margin-top:8px;
-    }
-
-    .hfill{
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg,var(--purple),var(--blue));
-    }
-
-    .list{
-      display:grid;
-      gap:8px;
-    }
-
-    .item{
-      border-radius:16px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.04);
-      padding:12px;
-    }
-
-    .empty{
-      border-radius:16px;
-      border:1px dashed var(--line-2);
-      background:rgba(255,255,255,.03);
-      padding:12px;
-      color:var(--muted);
-    }
-
-    .nav{
-      position:fixed;
-      left:50%;
-      transform:translateX(-50%);
-      bottom:0;
-      width:100%;
-      max-width:var(--maxw);
-      padding:8px 12px calc(8px + var(--safe-bottom));
-      background:rgba(10,15,24,.94);
-      backdrop-filter:blur(16px);
-      -webkit-backdrop-filter:blur(16px);
-      border-top:1px solid var(--line);
-      z-index:50;
-    }
-
-    .nav-inner{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:8px;
-    }
-
-    .tab-btn{
-      min-height:56px;
-      border-radius:16px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:4px;
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .tab-btn.active{
-      color:var(--text);
-      background:linear-gradient(135deg,rgba(110,168,255,.2),rgba(124,227,167,.14));
-      border-color:rgba(110,168,255,.24);
-    }
-
-    .tab-icon{
-      font-size:18px;
-      line-height:1;
-    }
-
-    .toast{
-      position:fixed;
-      left:50%;
-      transform:translateX(-50%) translateY(20px);
-      bottom:calc(84px + var(--safe-bottom));
-      width:calc(100% - 28px);
-      max-width:420px;
-      padding:12px 14px;
-      border-radius:16px;
-      background:rgba(16,24,36,.96);
-      border:1px solid rgba(255,255,255,.1);
-      box-shadow:0 10px 24px rgba(0,0,0,.3);
-      color:var(--text);
-      font-size:14px;
-      opacity:0;
-      pointer-events:none;
-      transition:.22s ease;
-      z-index:60;
-    }
-
-    .toast.show{
-      opacity:1;
-      transform:translateX(-50%) translateY(0);
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <!-- 홈 -->
-    <section id="screen-home" class="screen active">
-      <div class="header">
-        <div>
-          <div class="title">홈</div>
-          <div class="sub" id="homeDateLabel"></div>
-        </div>
-        <div class="row">
-          <button id="goTodayBtn" class="ghost">오늘</button>
-          <div class="pill" id="homeWeekLabel"></div>
-        </div>
-      </div>
-
-      <div class="glass card">
-        <div class="hero">
-          <div class="hero-item">
-            <div class="muted">오늘 세트</div>
-            <div class="hero-value" id="heroDaySets">0</div>
-          </div>
-          <div class="hero-item">
-            <div class="muted">수면 시간</div>
-            <div class="hero-value" id="heroSleep">0h</div>
-          </div>
-        </div>
-
-        <div class="section-title">
-          <h2>오늘 운동</h2>
-          <div class="row">
-            <select id="homeFilter">
-              <option value="all">전체</option>
-              <option value="home">집</option>
-              <option value="gym">헬스장</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="homeExerciseList" class="exercise-list"></div>
-
-        <div class="section-title" style="margin-top:12px;">
-          <h2>오늘 수면</h2>
-          <span class="pill" id="sleepDurationPill">0h</span>
-        </div>
-
-        <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <div>
-            <label class="small">취침 시간</label>
-            <input type="time" id="sleepStart" />
-          </div>
-          <div>
-            <label class="small">기상 시간</label>
-            <input type="time" id="sleepEnd" />
-          </div>
-        </div>
-
-        <div class="section-title" style="margin-top:12px;">
-          <h2>오늘 메모</h2>
-        </div>
-        <input type="text" id="dayNote" placeholder="한 줄 메모" />
-
-        <div class="row" style="margin-top:12px;">
-          <button id="saveHomeBtn" class="primary" style="flex:1;">저장</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 달력 -->
-    <section id="screen-calendar" class="screen">
-      <div class="header">
-        <div>
-          <div class="title">달력</div>
-          <div class="sub">날짜를 눌러 홈 탭에서 바로 수정 · 좌우 스와이프로 월 이동</div>
-        </div>
-      </div>
-
-      <div class="glass card">
-        <div class="calendar-head">
-          <button id="prevMonthBtn" class="ghost">◀</button>
-          <strong id="calendarTitle"></strong>
-          <button id="nextMonthBtn" class="ghost">▶</button>
-        </div>
-        <div id="calendarWrap" class="calendar-wrap">
-          <div class="calendar" id="calendar"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 통계 -->
-    <section id="screen-stats" class="screen">
-      <div class="header">
-        <div>
-          <div class="title">통계</div>
-          <div class="sub">주간 / 월간 진행률과 수면 패턴</div>
-        </div>
-      </div>
-
-      <div class="glass card">
-        <div class="toggle-tabs">
-          <button id="statsWeekBtn" class="active">주간</button>
-          <button id="statsMonthBtn">월간</button>
-        </div>
-      </div>
-
-      <div class="glass card">
-        <div class="section-title">
-          <h2>요약</h2>
-          <span class="pill" id="statsRangeLabel"></span>
-        </div>
-        <div class="hero">
-          <div class="hero-item">
-            <div class="muted">총 세트</div>
-            <div class="hero-value" id="statsTotalSets">0</div>
-          </div>
-          <div class="hero-item">
-            <div class="muted">운동일 수</div>
-            <div class="hero-value" id="statsWorkoutDays">0</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass card">
-        <div class="section-title">
-          <h2>부위별 세트 달성률</h2>
-        </div>
-        <div id="progressList"></div>
-      </div>
-
-      <div class="glass card">
-        <div class="section-title">
-          <h2>수면 패턴</h2>
-        </div>
-        <div id="sleepBars" class="bars"></div>
-      </div>
-
-      <div class="glass card">
-        <div class="section-title">
-          <h2>보고서</h2>
-        </div>
-        <div class="col">
-          <input id="reportTitle" type="text" placeholder="보고서 제목" />
-          <div class="row">
-            <button id="exportMdBtn" class="purple" style="flex:1;">MD 저장</button>
-            <button id="exportHtmlBtn" class="green" style="flex:1;">HTML 저장</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 설정 -->
-    <section id="screen-settings" class="screen">
-      <div class="header">
-        <div>
-          <div class="title">설정</div>
-          <div class="sub">목표 · 백업 · 복원 · 회복 · 설치</div>
-        </div>
-      </div>
-
-      <div class="glass card">
-        <div class="section-title"><h2>주간 목표 세트</h2></div>
-        <div id="goalInputs" class="col"></div>
-      </div>
-
-      <div class="glass card">
-        <div class="section-title"><h2>회복 기록</h2></div>
-        <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <select id="soreGroup">
-            <option value="어깨">어깨</option>
-            <option value="이두">이두</option>
-            <option value="삼두">삼두</option>
-            <option value="가슴">가슴</option>
-            <option value="등">등</option>
-            <option value="하체">하체</option>
-            <option value="복근">복근</option>
-            <option value="종아리">종아리</option>
-          </select>
-          <button id="startSoreBtn" class="yellow">근육통 시작</button>
-        </div>
-        <div class="section-title" style="margin-top:10px;"><h3>진행 중</h3></div>
-        <div id="activeSoreList" class="list"></div>
-      </div>
-
-      <div class="glass card">
-        <div class="section-title"><h2>데이터</h2></div>
-        <div class="col">
-          <button id="installBtn" class="primary" style="display:none;">앱 설치</button>
-          <button id="exportJsonBtn">JSON 백업</button>
-          <button id="importJsonBtn">JSON 가져오기</button>
-          <input id="importFile" type="file" accept=".json" style="display:none;" />
-          <button id="clearAllBtn" class="red">전체 데이터 삭제</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 토스트 -->
-    <div id="toast" class="toast"></div>
-
-    <!-- 하단 탭바 -->
-    <nav class="nav">
-      <div class="nav-inner">
-        <button class="tab-btn active" data-screen="home">
-          <span class="tab-icon">🏠</span>
-          <span>홈</span>
-        </button>
-        <button class="tab-btn" data-screen="calendar">
-          <span class="tab-icon">🗓️</span>
-          <span>달력</span>
-        </button>
-        <button class="tab-btn" data-screen="stats">
-          <span class="tab-icon">📊</span>
-          <span>통계</span>
-        </button>
-        <button class="tab-btn" data-screen="settings">
-          <span class="tab-icon">⚙️</span>
-          <span>설정</span>
-        </button>
-      </div>
-    </nav>
-  </div>
-
-  <script>
-    const STORAGE_KEY = "workoutTrackerPro_pwa_report_v1";
-
-    function getTodayString(){
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth()+1).padStart(2,"0");
-      const d = String(now.getDate()).padStart(2,"0");
-      return `${y}-${m}-${d}`;
-    }
-
-    const TODAY = getTodayString();
-
-    const CONFIG = {
-      defaultGoals: { "어깨":13,"이두":10,"삼두":10,"가슴":10,"등":10,"하체":10,"복근":6,"종아리":6 },
-      groups: [
-        { group:"어깨", items:[
-          { id:"shoulder_press", name:"덤벨 숄더 프레스", target:4, muscle:"어깨", place:["home","gym"] },
-          { id:"lateral_raise", name:"사레레", target:5, muscle:"어깨", place:["home","gym"] },
-          { id:"rear_raise", name:"벤트오버 사레레", target:4, muscle:"어깨", place:["home","gym"] }
-        ]},
-        { group:"팔", items:[
-          { id:"bicep_curl", name:"덤벨 컬", target:10, muscle:"이두", place:["home","gym"] },
-          { id:"tricep_extension", name:"오버헤드 트라이셉스 익스텐션", target:10, muscle:"삼두", place:["home","gym"] }
-        ]},
-        { group:"가슴", items:[
-          { id:"flat_press", name:"플랫 벤치", target:4, muscle:"가슴", place:["home","gym"] },
-          { id:"incline_press", name:"인클라인 벤치", target:3, muscle:"가슴", place:["home","gym"] },
-          { id:"fly", name:"플라이", target:3, muscle:"가슴", place:["home","gym"] }
-        ]},
-        { group:"등", items:[
-          { id:"lat_pulldown", name:"랫풀다운", target:4, muscle:"등", place:["gym"] },
-          { id:"pulldown_row", name:"암풀다운/로우", target:6, muscle:"등", place:["home","gym"] }
-        ]},
-        { group:"하체", items:[
-          { id:"squat", name:"스쿼트", target:4, muscle:"하체", place:["home","gym"] },
-          { id:"leg_extension", name:"레그 익스텐션", target:3, muscle:"하체", place:["gym"] },
-          { id:"leg_curl", name:"레그 컬", target:3, muscle:"하체", place:["home","gym"] }
-        ]},
-        { group:"복근/종아리", items:[
-          { id:"crunch", name:"크런치", target:6, muscle:"복근", place:["home","gym"] },
-          { id:"calf_raise", name:"카프 레이즈", target:6, muscle:"종아리", place:["home","gym"] }
-        ]}
-      ]
-    };
-
-    let db = loadDB();
-    let selectedDate = TODAY;
-    let calendarCursor = new Date(TODAY + "T00:00:00");
-    let currentScreen = "home";
-    let statsMode = "week";
-    let deferredPrompt = null;
-    let toastTimer = null;
-
-    function loadDB(){
-      const raw = localStorage.getItem(STORAGE_KEY);
-      const base = {
-        dailyLogs:{},
-        sorenessLogs:[],
-        settings:{ goals:{...CONFIG.defaultGoals}, placeFilter:"all" }
-      };
-      if(!raw) return base;
-
-      try{
-        const parsed = JSON.parse(raw);
-        parsed.dailyLogs ||= {};
-        parsed.sorenessLogs ||= [];
-        parsed.settings ||= {};
-        parsed.settings.goals ||= { ...CONFIG.defaultGoals };
-        parsed.settings.placeFilter ||= "all";
-        Object.keys(CONFIG.defaultGoals).forEach(k => {
-          parsed.settings.goals[k] = CONFIG.defaultGoals[k];
-        });
-
-        Object.keys(parsed.dailyLogs).forEach(date => {
-          const log = parsed.dailyLogs[date];
-          if(typeof log.sleep === "number" && !log.sleepMeta){
-            log.sleepMeta = { start:null, end:null, duration:log.sleep };
-          }
-          if(!log.sleepMeta){
-            log.sleepMeta = { start:null, end:null, duration:null };
-          }
-          log.exercises ||= {};
-          log.note ||= "";
-        });
-
-        return parsed;
-      }catch(e){
-        return base;
-      }
-    }
-
-    function saveDB(){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-    }
-
-    function showToast(message){
-      const toast = document.getElementById("toast");
-      toast.textContent = message;
-      toast.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
-      }, 1800);
-    }
-
-    function fmt(date){
-      const d = new Date(date);
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-    }
-
-    function pdate(str){ return new Date(str + "T00:00:00"); }
-    function dayName(str){ return ["일","월","화","수","목","금","토"][pdate(str).getDay()] + "요일"; }
-
-    function mondayOf(str){
-      const d = pdate(str);
-      const g = d.getDay();
-      const diff = g===0 ? -6 : 1-g;
-      d.setDate(d.getDate()+diff);
-      return fmt(d);
-    }
-
-    function weekRange(str){
-      const m = pdate(mondayOf(str));
-      const s = new Date(m);
-      s.setDate(s.getDate()+6);
-      return `${fmt(m)} ~ ${fmt(s)}`;
-    }
-
-    function ensureLog(ds){
-      if(!db.dailyLogs[ds]){
-        db.dailyLogs[ds] = {
-          exercises:{},
-          sleep:null,
-          sleepMeta:{ start:null, end:null, duration:null },
-          note:""
-        };
-      }
-      CONFIG.groups.forEach(g => g.items.forEach(it => {
-        if(typeof db.dailyLogs[ds].exercises[it.id] !== "number"){
-          db.dailyLogs[ds].exercises[it.id] = 0;
-        }
-      }));
-      if(!db.dailyLogs[ds].sleepMeta){
-        db.dailyLogs[ds].sleepMeta = { start:null, end:null, duration:null };
-      }
-      if(typeof db.dailyLogs[ds].note !== "string") db.dailyLogs[ds].note = "";
-    }
-
-    function allItems(){
-      return CONFIG.groups.flatMap(g => g.items);
-    }
-
-    function getItem(id){
-      return allItems().find(x => x.id === id);
-    }
-
-    function getDayTotal(ds){
-      ensureLog(ds);
-      return Object.values(db.dailyLogs[ds].exercises).reduce((a,b)=>a+Number(b||0),0);
-    }
-
-    function getWeekDates(ds){
-      const m = pdate(mondayOf(ds));
-      return Array.from({length:7}, (_,i) => {
-        const x = new Date(m);
-        x.setDate(m.getDate()+i);
-        return fmt(x);
-      });
-    }
-
-    function getMonthDates(y,m){
-      const last = new Date(y,m+1,0).getDate();
-      return Array.from({length:last},(_,i)=>fmt(new Date(y,m,i+1)));
-    }
-
-    function getSleepDuration(start,end){
-      if(!start || !end) return null;
-      const [sh,sm] = start.split(":").map(Number);
-      const [eh,em] = end.split(":").map(Number);
-      let startMin = sh*60 + sm;
-      let endMin = eh*60 + em;
-      if(endMin < startMin) endMin += 24*60;
-      const dur = (endMin - startMin) / 60;
-      return Math.round(dur * 10) / 10;
-    }
-
-    function getWeekStats(ds){
-      const dates = getWeekDates(ds);
-      const muscles = { "어깨":0,"이두":0,"삼두":0,"가슴":0,"등":0,"하체":0,"복근":0,"종아리":0 };
-      let totalSets = 0;
-      let workoutDays = 0;
-
-      dates.forEach(d => {
-        ensureLog(d);
-        const total = getDayTotal(d);
-        if(total > 0) workoutDays++;
-        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets]) => {
-          const item = getItem(id);
-          if(item){
-            muscles[item.muscle] += Number(sets || 0);
-            totalSets += Number(sets || 0);
-          }
-        });
-      });
-
-      return { dates, muscles, totalSets, workoutDays };
-    }
-
-    function getMonthStats(cursor){
-      const y = cursor.getFullYear();
-      const m = cursor.getMonth();
-      const dates = getMonthDates(y,m);
-      const muscles = { "어깨":0,"이두":0,"삼두":0,"가슴":0,"등":0,"하체":0,"복근":0,"종아리":0 };
-      let totalSets = 0;
-      let workoutDays = 0;
-
-      dates.forEach(d => {
-        ensureLog(d);
-        const total = getDayTotal(d);
-        if(total > 0) workoutDays++;
-        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets]) => {
-          const item = getItem(id);
-          if(item){
-            muscles[item.muscle] += Number(sets || 0);
-            totalSets += Number(sets || 0);
-          }
-        });
-      });
-
-      return { dates, muscles, totalSets, workoutDays };
-    }
-
-    function switchScreen(name){
-      currentScreen = name;
-      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-      document.getElementById(`screen-${name}`).classList.add("active");
-      document.querySelectorAll(".tab-btn").forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.screen === name);
-      });
-
-      if(name === "home") renderHome();
-      if(name === "calendar") renderCalendar();
-      if(name === "stats") renderStats();
-      if(name === "settings") renderSettings();
-    }
-
-    function renderHome(){
-      ensureLog(selectedDate);
-      const log = db.dailyLogs[selectedDate];
-      document.getElementById("homeDateLabel").textContent = `${selectedDate} (${dayName(selectedDate)})`;
-      document.getElementById("homeWeekLabel").textContent = weekRange(selectedDate);
-      document.getElementById("heroDaySets").textContent = getDayTotal(selectedDate);
-      document.getElementById("heroSleep").textContent = `${log.sleepMeta?.duration ?? 0}h`;
-
-      document.getElementById("dayNote").value = log.note || "";
-      document.getElementById("sleepStart").value = log.sleepMeta?.start || "";
-      document.getElementById("sleepEnd").value = log.sleepMeta?.end || "";
-      updateSleepPill();
-
-      const filter = db.settings.placeFilter || "all";
-      document.getElementById("homeFilter").value = filter;
-
-      const list = document.getElementById("homeExerciseList");
-      list.innerHTML = "";
-
-      allItems()
-        .filter(item => filter === "all" || item.place.includes(filter))
-        .forEach(item => {
-          const val = log.exercises[item.id] || 0;
-          const row = document.createElement("div");
-          row.className = "exercise-row";
-          row.innerHTML = `
-            <div>
-              <div class="exercise-name">${item.name}</div>
-              <div class="exercise-sub">${item.muscle} · 주 목표 ${item.target}세트</div>
-            </div>
-            <div class="stepper">
-              <button data-step="-1" data-id="${item.id}">-</button>
-              <input type="number" min="0" value="${val}" data-id="${item.id}" />
-              <button data-step="1" data-id="${item.id}">+</button>
-            </div>
-          `;
-          list.appendChild(row);
-        });
-
-      list.querySelectorAll("input[data-id]").forEach(input => {
-        input.addEventListener("input", e => {
-          const id = e.target.dataset.id;
-          let v = Number(e.target.value || 0);
-          if(v < 0) v = 0;
-          db.dailyLogs[selectedDate].exercises[id] = v;
-          renderHomeHeroOnly();
-        });
-      });
-
-      list.querySelectorAll("button[data-step]").forEach(btn => {
-        btn.addEventListener("click", e => {
-          const id = e.target.dataset.id;
-          const step = Number(e.target.dataset.step);
-          const input = list.querySelector(`input[data-id="${id}"]`);
-          let v = Number(input.value || 0) + step;
-          if(v < 0) v = 0;
-          input.value = v;
-          db.dailyLogs[selectedDate].exercises[id] = v;
-          renderHomeHeroOnly();
-        });
-      });
-    }
-
-    function renderHomeHeroOnly(){
-      ensureLog(selectedDate);
-      document.getElementById("heroDaySets").textContent = getDayTotal(selectedDate);
-    }
-
-    function updateSleepPill(){
-      const start = document.getElementById("sleepStart").value;
-      const end = document.getElementById("sleepEnd").value;
-      const dur = getSleepDuration(start,end);
-      document.getElementById("sleepDurationPill").textContent = `${dur ?? 0}h`;
-      document.getElementById("heroSleep").textContent = `${dur ?? 0}h`;
-    }
-
-    function saveHome(){
-      ensureLog(selectedDate);
-      const start = document.getElementById("sleepStart").value || null;
-      const end = document.getElementById("sleepEnd").value || null;
-      const duration = getSleepDuration(start,end);
-
-      db.dailyLogs[selectedDate].sleepMeta = { start, end, duration };
-      db.dailyLogs[selectedDate].sleep = duration;
-      db.dailyLogs[selectedDate].note = document.getElementById("dayNote").value.trim();
-
-      saveDB();
-      renderHome();
-      renderCalendar();
-      renderStats();
-      showToast("저장되었습니다");
-    }
-
-    function renderCalendar(){
-      const cal = document.getElementById("calendar");
-      cal.innerHTML = "";
-
-      const y = calendarCursor.getFullYear();
-      const m = calendarCursor.getMonth();
-      document.getElementById("calendarTitle").textContent = `${y}년 ${m+1}월`;
-
-      ["월","화","수","목","금","토","일"].forEach(w => {
-        const d = document.createElement("div");
-        d.className = "weekday";
-        d.textContent = w;
-        cal.appendChild(d);
-      });
-
-      const first = new Date(y,m,1);
-      let offset = first.getDay();
-      offset = offset === 0 ? 6 : offset - 1;
-      const start = new Date(first);
-      start.setDate(first.getDate() - offset);
-
-      for(let i=0;i<42;i++){
-        const d = new Date(start);
-        d.setDate(start.getDate()+i);
-        const ds = fmt(d);
-        ensureLog(ds);
-
-        const total = getDayTotal(ds);
-        const sleep = db.dailyLogs[ds]?.sleepMeta?.duration;
-        const activeSore = db.sorenessLogs.filter(x => ds >= x.startedAt && (!x.recoveredAt || ds <= x.recoveredAt));
-
-        const cell = document.createElement("div");
-        cell.className = "day";
-        if(d.getMonth() !== m) cell.classList.add("other");
-        if(ds === TODAY) cell.classList.add("today");
-        if(ds === selectedDate) cell.classList.add("selected");
-        cell.innerHTML = `
-          <div class="day-top">
-            <span class="day-num">${d.getDate()}</span>
-          </div>
-          <div class="badge-wrap">
-            ${total > 0 ? `<span class="badge b-work">운동</span>` : ""}
-            ${typeof sleep === "number" ? `<span class="badge b-sleep">${sleep}h</span>` : ""}
-            ${activeSore.length ? `<span class="badge b-sore">${activeSore.length}통</span>` : ""}
-          </div>
-        `;
-        cell.addEventListener("click", () => {
-          selectedDate = ds;
-          switchScreen("home");
-        });
-        cal.appendChild(cell);
-      }
-    }
-
-    function renderStats(){
-      const isWeek = statsMode === "week";
-      const data = isWeek ? getWeekStats(selectedDate) : getMonthStats(calendarCursor);
-
-      document.getElementById("statsRangeLabel").textContent =
-        isWeek
-          ? weekRange(selectedDate)
-          : `${calendarCursor.getFullYear()}-${String(calendarCursor.getMonth()+1).padStart(2,"0")}`;
-
-      document.getElementById("statsTotalSets").textContent = data.totalSets;
-      document.getElementById("statsWorkoutDays").textContent = data.workoutDays;
-
-      const goals = db.settings.goals || CONFIG.defaultGoals;
-      const progressList = document.getElementById("progressList");
-      progressList.innerHTML = "";
-
-      Object.entries(goals).forEach(([muscle,target]) => {
-        const val = data.muscles[muscle] || 0;
-        const pct = Math.min(100, Math.round((val/target)*100));
-        const div = document.createElement("div");
-        div.className = "progress-card";
-        div.innerHTML = `
-          <div style="display:flex;justify-content:space-between;gap:8px;">
-            <strong>${muscle}</strong>
-            <span class="small">${val}/${target}</span>
-          </div>
-          <div class="progress"><div class="bar" style="width:${pct}%"></div></div>
-        `;
-        progressList.appendChild(div);
-      });
-
-      const dates = isWeek
-        ? getWeekDates(selectedDate)
-        : getMonthDates(calendarCursor.getFullYear(), calendarCursor.getMonth()).slice(-7);
-
-      const sleepBars = document.getElementById("sleepBars");
-      sleepBars.innerHTML = "";
-      const maxSleep = Math.max(1, ...dates.map(d => db.dailyLogs[d]?.sleepMeta?.duration || 0));
-
-      dates.forEach(d => {
-        const sleep = db.dailyLogs[d]?.sleepMeta?.duration || 0;
-        const pct = Math.round((sleep/maxSleep)*100);
-        const row = document.createElement("div");
-        row.className = "bar-row";
-        row.innerHTML = `
-          <div style="display:flex;justify-content:space-between;gap:8px;">
-            <strong>${d.slice(5)}</strong>
-            <span class="small">${sleep}h</span>
-          </div>
-          <div class="hbar"><div class="hfill" style="width:${pct}%"></div></div>
-        `;
-        sleepBars.appendChild(row);
-      });
-
-      document.getElementById("statsWeekBtn").classList.toggle("active", isWeek);
-      document.getElementById("statsMonthBtn").classList.toggle("active", !isWeek);
-    }
-
-    function renderSettings(){
-      const goalInputs = document.getElementById("goalInputs");
-      goalInputs.innerHTML = "";
-      const goals = db.settings.goals || CONFIG.defaultGoals;
-
-      Object.entries(goals).forEach(([muscle,val]) => {
-        const wrap = document.createElement("div");
-        wrap.innerHTML = `
-          <label class="small">${muscle}</label>
-          <input type="number" min="0" value="${val}" data-goal="${muscle}" />
-        `;
-        goalInputs.appendChild(wrap);
-      });
-
-      goalInputs.querySelectorAll("input[data-goal]").forEach(input => {
-        input.addEventListener("input", e => {
-          const key = e.target.dataset.goal;
-          db.settings.goals[key] = Math.max(0, Number(e.target.value || 0));
-          saveDB();
-        });
-      });
-
-      const active = db.sorenessLogs.filter(x => !x.recoveredAt).sort((a,b)=>b.startedAt.localeCompare(a.startedAt));
-      const list = document.getElementById("activeSoreList");
-      list.innerHTML = active.length ? "" : `<div class="empty">진행 중인 근육통 기록이 없습니다.</div>`;
-
-      active.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <div>
-              <strong>${item.group}</strong>
-              <div class="small">시작: ${item.startedAt}</div>
-            </div>
-            <button data-resolve="${item.id}" class="green">회복됨</button>
-          </div>
-        `;
-        list.appendChild(div);
-      });
-
-      list.querySelectorAll("[data-resolve]").forEach(btn => {
-        btn.addEventListener("click", e => {
-          const id = e.target.dataset.resolve;
-          const target = db.sorenessLogs.find(x => x.id === id);
-          if(target){
-            target.recoveredAt = selectedDate;
-            saveDB();
-            renderSettings();
-            renderCalendar();
-            showToast("회복 처리되었습니다");
-          }
-        });
-      });
-    }
-
-    function exportJSON(){
-      const blob = new Blob([JSON.stringify(db,null,2)], { type:"application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "workout_tracker_backup.json";
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast("JSON 백업을 저장했어요");
-    }
-
-    function importJSON(file){
-      const reader = new FileReader();
-      reader.onload = e => {
-        try{
-          const parsed = JSON.parse(e.target.result);
-          if(!parsed.dailyLogs || !parsed.sorenessLogs){
-            showToast("올바른 백업 파일이 아닙니다");
-            return;
-          }
-          db = loadDBMerge(parsed);
-          saveDB();
-          renderAll();
-          showToast("가져오기 완료");
-        }catch(err){
-          showToast("파일 읽기 오류");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function loadDBMerge(parsed){
-      parsed.settings ||= {};
-      parsed.settings.goals ||= { ...CONFIG.defaultGoals };
-      parsed.settings.placeFilter ||= "all";
-      Object.keys(parsed.dailyLogs || {}).forEach(date => {
-        const log = parsed.dailyLogs[date];
-        log.exercises ||= {};
-        log.note ||= "";
-        if(typeof log.sleep === "number" && !log.sleepMeta){
-          log.sleepMeta = { start:null, end:null, duration:log.sleep };
-        }
-        if(!log.sleepMeta){
-          log.sleepMeta = { start:null, end:null, duration:null };
-        }
-      });
-      return parsed;
-    }
-
-    function clearAll(){
-      if(!confirm("전체 데이터를 삭제할까요?")) return;
-      db = {
-        dailyLogs:{},
-        sorenessLogs:[],
-        settings:{ goals:{...CONFIG.defaultGoals}, placeFilter:"all" }
-      };
-      saveDB();
-      renderAll();
-      showToast("전체 데이터를 삭제했어요");
-    }
-
-    function buildReportMarkdown(){
-      const isWeek = statsMode === "week";
-      const dates = isWeek ? getWeekDates(selectedDate) : getMonthDates(calendarCursor.getFullYear(), calendarCursor.getMonth());
-      const data = isWeek ? getWeekStats(selectedDate) : getMonthStats(calendarCursor);
-
-      let md = `# ${document.getElementById("reportTitle").value.trim() || "운동 보고서"}\n\n`;
-      md += `- 범위: ${isWeek ? "주간" : "월간"}\n`;
-      md += `- 생성일: ${TODAY}\n`;
-      md += `- 총 세트: ${data.totalSets}\n`;
-      md += `- 운동일 수: ${data.workoutDays}\n\n`;
-      md += `## 부위별 세트\n`;
-      Object.entries(data.muscles).forEach(([k,v]) => md += `- ${k}: ${v}세트\n`);
-      md += `\n## 날짜별 기록\n`;
-
-      dates.forEach(d => {
-        ensureLog(d);
-        const total = getDayTotal(d);
-        const sleep = db.dailyLogs[d].sleepMeta?.duration;
-        const note = db.dailyLogs[d].note;
-        if(total === 0 && !sleep && !note) return;
-        md += `\n### ${d} (${dayName(d)})\n`;
-        md += `- 총 세트: ${total}\n`;
-        md += `- 수면: ${sleep ?? "-"}h\n`;
-        if(note) md += `- 메모: ${note}\n`;
-        Object.entries(db.dailyLogs[d].exercises).forEach(([id,sets]) => {
-          if(Number(sets) > 0){
-            md += `  - ${getItem(id)?.name || id}: ${sets}세트\n`;
-          }
-        });
-      });
-
-      return md;
-    }
-
-    function buildReportHTML(){
-      const title = document.getElementById("reportTitle").value.trim() || "운동 보고서";
-      const isWeek = statsMode === "week";
-      const dates = isWeek ? getWeekDates(selectedDate) : getMonthDates(calendarCursor.getFullYear(), calendarCursor.getMonth());
-      const data = isWeek ? getWeekStats(selectedDate) : getMonthStats(calendarCursor);
-
-      const rows = dates.map(d => {
-        ensureLog(d);
-        const total = getDayTotal(d);
-        const sleep = db.dailyLogs[d].sleepMeta?.duration;
-        const note = db.dailyLogs[d].note;
-        if(total === 0 && !sleep && !note) return "";
-        const ex = Object.entries(db.dailyLogs[d].exercises)
-          .filter(([,v]) => Number(v) > 0)
-          .map(([id,v]) => `<li>${escapeHtml(getItem(id)?.name || id)}: ${v}세트</li>`)
-          .join("");
-        return `
-          <section class="card">
-            <h3>${d} (${dayName(d)})</h3>
-            <p>총 세트: ${total} / 수면: ${sleep ?? "-"}h</p>
-            ${note ? `<p>메모: ${escapeHtml(note)}</p>` : ""}
-            ${ex ? `<ul>${ex}</ul>` : ""}
-          </section>
-        `;
-      }).join("");
-
-      return `<!DOCTYPE html>
-<html lang="ko">
-<head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>${escapeHtml(title)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WorkoutLog">
+<meta name="theme-color" content="#0a0f18">
+<link rel="manifest" href="manifest.json">
+<title>Workout Log</title>
 <style>
-body{font-family:sans-serif;max-width:900px;margin:0 auto;padding:20px;background:#f4f6fa;color:#17212f}
-.card{background:#fff;border:1px solid #dbe3ee;border-radius:16px;padding:16px;margin-bottom:12px}
+:root {
+  --bg:#0a0f18; --panel:rgba(255,255,255,.04); --card:#141b28; --card2:#1a2236;
+  --border:#1e293b; --blue:#3b82f6; --green:#00c896; --red:#ff6b6b;
+  --yellow:#ffc107; --purple:#a855f7; --text:#e2e8f0; --muted:#94a3b8;
+  --sub:#64748b; --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;
+  max-width:480px;margin:0 auto;min-height:100vh;position:relative;overflow-x:hidden;
+}
+
+/* ── screens ── */
+.screen{display:none;padding:0 12px 100px}
+.screen.active{display:block}
+
+/* ── top bar ── */
+.topbar{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--border);padding:10px 12px 0}
+.topbar h1{text-align:center;font-size:1rem;font-weight:700;color:var(--green);margin-bottom:8px}
+
+/* ── date bar ── */
+.date-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 4px 10px}
+.date-bar button{background:var(--card);border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:10px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.date-bar .date-label{font-size:.85rem;font-weight:600;color:var(--text)}
+.date-bar .date-label .dow{color:var(--muted);font-weight:400;font-size:.75rem;margin-left:4px}
+.today-btn{font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--green);color:#000;border:none;cursor:pointer;margin-left:6px}
+
+/* ── day selector ── */
+.day-selector{display:flex;gap:6px;padding:0 0 12px}
+.day-btn{flex:1;padding:10px 4px 8px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:.68rem;font-weight:700;border-radius:10px;cursor:pointer;transition:all .2s;text-align:center}
+.day-btn .ico{display:block;font-size:1.1rem;margin-bottom:2px}
+.day-btn.active{background:var(--green);color:#000;border-color:var(--green);box-shadow:0 2px 12px #00c89644}
+
+/* ── phase card ── */
+.phase{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.phase-head{padding:9px 14px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border)}
+.phase-head .dot{width:7px;height:7px;border-radius:50%}
+.pw-machine .phase-head{color:var(--muted)}.pw-machine .dot{background:var(--muted)}
+.pw-free .phase-head{color:var(--yellow)}.pw-free .dot{background:var(--yellow)}
+.pw-main .phase-head{color:var(--green)}.pw-main .dot{background:var(--green)}.pw-main{border-color:#00c89633}
+.pw-vol .phase-head{color:var(--blue)}.pw-vol .dot{background:var(--blue)}
+
+/* ── exercise row ── */
+.ex-row{border-bottom:1px solid #ffffff08}.ex-row:last-child{border-bottom:none}
+.ex-row.open .ex-arrow{transform:rotate(180deg)}
+.ex-arrow{transition:transform .25s;color:var(--sub);font-size:.6rem;flex-shrink:0}
+.ex-main{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.ex-name{font-size:.82rem;font-weight:500;flex:1;line-height:1.4}
+.ex-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;margin-left:10px;flex-shrink:0}
+.ex-target{font-size:.7rem;font-weight:600;color:var(--muted)}
+.ex-rir{font-size:.58rem;font-weight:700;padding:2px 7px;border-radius:6px}
+.rir-easy{background:#ffffff10;color:var(--sub)}.rir-mid{background:#00c89620;color:var(--green)}.rir-hard{background:#ff6b6b20;color:var(--red)}
+
+/* ── sets area ── */
+.sets-area{padding:0 14px 10px}
+.set-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.set-label{font-size:.65rem;color:var(--sub);width:20px;text-align:center;font-weight:600}
+.set-row input{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 8px;font-size:.8rem;font-weight:600;text-align:center;outline:none;transition:border-color .2s}
+.set-row input:focus{border-color:var(--green)}
+.set-row .weight-input{width:72px}.set-row .reps-input{width:50px}
+.set-row .unit{font-size:.6rem;color:var(--sub);font-weight:600}
+.set-row .del-btn{background:none;border:none;color:var(--sub);font-size:.85rem;cursor:pointer;padding:4px 6px;border-radius:6px}
+.set-row .del-btn:active{color:var(--red)}
+.add-set-btn{display:flex;align-items:center;justify-content:center;gap:4px;background:var(--panel);border:1px dashed var(--border);color:var(--muted);border-radius:8px;padding:6px;font-size:.7rem;font-weight:600;cursor:pointer;width:100%;transition:all .2s}
+.add-set-btn:active{border-color:var(--green);color:var(--green)}
+
+/* ── exercise detail accordion ── */
+.ex-detail{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.ex-row.open .ex-detail{max-height:800px}
+.ex-detail-inner{padding:0 14px 12px;border-top:1px solid #ffffff08;padding-top:10px}
+.ex-detail-inner h4{font-size:.68rem;font-weight:700;margin-bottom:4px;margin-top:8px}
+.ex-detail-inner h4:first-child{margin-top:0}
+.ex-detail-inner ul{list-style:none;font-size:.72rem;color:var(--muted);line-height:1.65}
+.ex-detail-inner ul li{padding-left:12px;position:relative}
+.ex-detail-inner ul li::before{content:'';position:absolute;left:0;top:9px;width:4px;height:4px;border-radius:50%;background:var(--sub)}
+.ex-detail-inner .warn h4{color:var(--yellow)}.ex-detail-inner .warn ul li::before{background:var(--yellow)}
+.ex-detail-inner .danger h4{color:var(--red)}.ex-detail-inner .danger ul li::before{background:var(--red)}
+.ex-detail-inner .focus h4{color:var(--blue)}.ex-detail-inner .focus ul li::before{background:var(--blue)}
+
+/* ── section card (sleep, note) ── */
+.section-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px}
+.section-title{font-size:.72rem;font-weight:700;color:var(--purple);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sleep-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sleep-row:last-of-type{margin-bottom:0}
+.sleep-row label{font-size:.7rem;color:var(--muted);width:50px;flex-shrink:0}
+.sleep-row input[type="time"]{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:.82rem;font-weight:600;flex:1;outline:none}
+.sleep-row input[type="time"]:focus{border-color:var(--purple)}
+.sleep-duration{text-align:center;font-size:.8rem;font-weight:700;color:var(--purple);padding:6px 0 0}
+
+/* ── sleep chart ── */
+.sleep-chart{display:flex;align-items:flex-end;gap:4px;height:60px;padding-top:4px;margin-top:10px}
+.sleep-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px}
+.sleep-bar{width:100%;border-radius:4px 4px 0 0;background:var(--purple);min-height:4px;transition:height .3s;opacity:.8}
+.sleep-bar-label{font-size:.55rem;color:var(--sub);font-weight:600}
+.sleep-bar-value{font-size:.55rem;color:var(--muted);font-weight:600}
+
+/* ── note ── */
+.note-area{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:.78rem;width:100%;resize:vertical;min-height:48px;outline:none;font-family:inherit;line-height:1.5}
+.note-area:focus{border-color:var(--green)}
+
+/* ── autosave indicator ── */
+.autosave-dot{position:fixed;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--green);opacity:0;transition:opacity .3s;z-index:30}
+.autosave-dot.flash{opacity:1}
+
+/* ── calendar ── */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;padding:10px 4px 8px}
+.cal-nav .cal-month{font-size:.85rem;font-weight:700;color:var(--text)}
+.cal-nav button{background:var(--card);border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:10px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-head{font-size:.6rem;font-weight:700;color:var(--sub);text-align:center;padding:4px 0}
+.cal-cell{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:10px;cursor:pointer;position:relative;font-size:.75rem;font-weight:500;transition:background .15s}
+.cal-cell:active{background:var(--panel)}.cal-cell.other{opacity:.25;pointer-events:none}
+.cal-cell.today{outline:2px solid var(--blue);outline-offset:-2px}
+.cal-cell.selected{background:var(--green);color:#000;font-weight:700}
+.cal-cell .badges{display:flex;gap:2px;position:absolute;bottom:3px}
+.cal-cell .badge{width:5px;height:5px;border-radius:50%}
+.badge-workout{background:var(--blue)}.badge-sleep{background:var(--purple)}.badge-injury{background:var(--red)}
+
+/* ── cal detail ── */
+.cal-detail{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:10px}
+.cal-detail-title{font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:8px}
+.cal-detail-ex{font-size:.72rem;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08;display:flex;justify-content:space-between}
+.cal-detail-ex:last-child{border:none}
+.cal-detail-sets{font-size:.65rem;color:var(--sub)}
+.cal-detail-sleep{font-size:.72rem;color:var(--purple);margin-top:6px}
+.cal-detail-note{font-size:.7rem;color:var(--muted);margin-top:4px;font-style:italic}
+
+/* ── injury ── */
+.injury-form{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.form-row{margin-bottom:10px}
+.form-row label{display:block;font-size:.68rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+.form-row input,.form-row select,.form-row textarea{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:.8rem;width:100%;outline:none;font-family:inherit}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--red)}
+.form-row textarea{min-height:48px;resize:vertical}
+.form-row input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+.injury-btn{background:var(--red);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:.78rem;font-weight:700;cursor:pointer;width:100%}
+.injury-btn:active{opacity:.8}
+.injury-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;border-left:3px solid var(--red)}
+.injury-card.recovered{border-left-color:var(--green);opacity:.7}
+.injury-card-title{font-size:.82rem;font-weight:700;color:var(--text);margin-bottom:4px}
+.injury-card-desc{font-size:.72rem;color:var(--muted);margin-bottom:6px;line-height:1.5}
+.injury-card-dates{font-size:.65rem;color:var(--sub);display:flex;flex-wrap:wrap;gap:8px}
+.injury-card-dates span{display:flex;align-items:center;gap:3px}
+.injury-card-actions{margin-top:8px;display:flex;gap:6px}
+.injury-card-actions button{flex:1;padding:7px 10px;border-radius:8px;font-size:.68rem;font-weight:700;cursor:pointer;border:1px solid var(--border)}
+.btn-recover{background:var(--green);color:#000;border-color:var(--green)!important}
+.btn-intensity{background:var(--blue);color:#fff;border-color:var(--blue)!important}
+.btn-delete{background:var(--card2);color:var(--red)}
+.section-label{font-size:.72rem;font-weight:700;color:var(--muted);margin:14px 0 8px;padding-left:2px}
+
+/* ── settings ── */
+.setting-group{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px}
+.setting-item{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff08;cursor:pointer}
+.setting-item:last-child{border:none}
+.setting-label{font-size:.78rem;font-weight:500}
+.setting-label small{display:block;font-size:.65rem;color:var(--sub);margin-top:2px}
+.setting-item .arrow{color:var(--sub);font-size:.7rem}
+
+/* ── bottom nav ── */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:20;padding:6px 8px calc(6px + var(--safe-b))}
+.nav-btn{flex:1;padding:6px 2px 4px;border:none;background:none;color:var(--sub);font-size:.6rem;font-weight:700;border-radius:10px;cursor:pointer;text-align:center;transition:all .2s}
+.nav-btn .ico{display:block;font-size:1.15rem;margin-bottom:1px}
+.nav-btn.active{color:var(--green)}
+
+/* ── toast ── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--card2);color:var(--text);padding:8px 16px;border-radius:10px;font-size:.72rem;font-weight:600;border:1px solid var(--border);opacity:0;transition:opacity .3s;z-index:50;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* ── empty state ── */
+.empty-state{text-align:center;padding:30px 20px;color:var(--sub);font-size:.78rem}
+.empty-state .ico{font-size:2rem;margin-bottom:8px;display:block}
+.hidden-input{display:none}
+.cal-legend{grid-column:1/-1;display:flex;gap:14px;justify-content:center;padding:10px 0 4px;font-size:.6rem;color:var(--sub)}
+.cal-legend .lg-blue{color:var(--blue)}.cal-legend .lg-purple{color:var(--purple)}.cal-legend .lg-red{color:var(--red)}
 </style>
 </head>
 <body>
-<h1>${escapeHtml(title)}</h1>
-<div class="card">
-  <p>총 세트: ${data.totalSets}</p>
-  <p>운동일 수: ${data.workoutDays}</p>
+
+<div class="autosave-dot" id="autosaveDot"></div>
+<div class="toast" id="toast"></div>
+<input type="file" accept=".json" class="hidden-input" id="importInput">
+
+<!-- ═══ SCREEN: WORKOUT ═══ -->
+<div class="screen active" id="screen-workout">
+  <div class="topbar">
+    <h1>💪 Workout Log</h1>
+    <div class="date-bar">
+      <button onclick="shiftDate(-1)">◀</button>
+      <div style="display:flex;align-items:center">
+        <span class="date-label" id="dateLabel"></span>
+        <button class="today-btn" onclick="goToday()">오늘</button>
+      </div>
+      <button onclick="shiftDate(1)">▶</button>
+    </div>
+    <div class="day-selector">
+      <button class="day-btn" data-day="chest_back" onclick="selectDay('chest_back')"><span class="ico">🏋️</span>가슴+등</button>
+      <button class="day-btn" data-day="shoulder_arms" onclick="selectDay('shoulder_arms')"><span class="ico">🔥</span>어깨+팔</button>
+      <button class="day-btn" data-day="legs" onclick="selectDay('legs')"><span class="ico">🦵</span>하체</button>
+    </div>
+  </div>
+  <div id="workoutContent"></div>
+
+  <!-- sleep -->
+  <div class="section-card" style="margin-top:12px">
+    <div class="section-title">😴 수면</div>
+    <div class="sleep-row"><label>취침</label><input type="time" id="sleepStart" onchange="onSleepChange()"></div>
+    <div class="sleep-row"><label>기상</label><input type="time" id="sleepEnd" onchange="onSleepChange()"></div>
+    <div class="sleep-duration" id="sleepDuration"></div>
+    <div class="sleep-chart" id="sleepChart"></div>
+  </div>
+
+  <!-- note -->
+  <div class="section-card">
+    <div class="section-title">📝 메모</div>
+    <textarea class="note-area" id="noteArea" placeholder="오늘 운동 메모..." oninput="onNoteChange()"></textarea>
+  </div>
 </div>
-${rows}
-</body>
-</html>`;
+
+<!-- ═══ SCREEN: CALENDAR ═══ -->
+<div class="screen" id="screen-calendar">
+  <div class="topbar">
+    <h1>📅 달력</h1>
+    <div class="cal-nav">
+      <button onclick="calShift(-1)">◀</button>
+      <span class="cal-month" id="calMonth"></span>
+      <button onclick="calShift(1)">▶</button>
+    </div>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div id="calDetail"></div>
+</div>
+
+<!-- ═══ SCREEN: INJURY ═══ -->
+<div class="screen" id="screen-injury">
+  <div class="topbar"><h1>🩹 부상 관리</h1></div>
+  <div class="injury-form">
+    <div class="form-row">
+      <label>부위</label>
+      <select id="injuryPart" onchange="onInjuryPartChange()">
+        <option value="">선택...</option>
+        <option value="어깨">어깨</option><option value="손목">손목</option>
+        <option value="팔꿈치">팔꿈치</option><option value="무릎">무릎</option>
+        <option value="허리">허리</option><option value="목">목</option>
+        <option value="발목">발목</option><option value="고관절">고관절</option>
+        <option value="__custom">직접 입력</option>
+      </select>
+    </div>
+    <div class="form-row" id="customPartRow" style="display:none">
+      <label>부위 (직접 입력)</label>
+      <input type="text" id="injuryPartCustom" placeholder="예: 왼쪽 어깨 전면">
+    </div>
+    <div class="form-row">
+      <label>설명</label>
+      <textarea id="injuryDesc" placeholder="어떤 부상인지 간단히..."></textarea>
+    </div>
+    <div class="form-row">
+      <label>부상일</label>
+      <input type="date" id="injuryDate">
+    </div>
+    <button class="injury-btn" onclick="addInjury()">+ 부상 기록</button>
+  </div>
+  <div class="section-label">🔴 활성 부상</div>
+  <div id="activeInjuries"></div>
+  <div class="section-label">🟢 회복 완료</div>
+  <div id="recoveredInjuries"></div>
+</div>
+
+<!-- ═══ SCREEN: SETTINGS ═══ -->
+<div class="screen" id="screen-settings">
+  <div class="topbar"><h1>⚙️ 설정</h1></div>
+  <div class="setting-group">
+    <div class="setting-item" onclick="exportBackup()">
+      <div class="setting-label">📦 데이터 백업<small>JSON 파일로 전체 데이터 저장</small></div>
+      <span class="arrow">→</span>
+    </div>
+    <div class="setting-item" onclick="document.getElementById('importInput').click()">
+      <div class="setting-label">📥 데이터 복원<small>JSON 백업 파일 불러오기</small></div>
+      <span class="arrow">→</span>
+    </div>
+    <div class="setting-item" onclick="clearAllData()">
+      <div class="setting-label">🗑️ 전체 초기화<small>모든 기록 삭제</small></div>
+      <span class="arrow">→</span>
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-item" id="installBtn" onclick="installPWA()" style="display:none">
+      <div class="setting-label">📱 앱 설치<small>홈 화면에 추가</small></div>
+      <span class="arrow">→</span>
+    </div>
+  </div>
+  <div style="text-align:center;padding:20px;color:var(--sub);font-size:.65rem">Workout Log v2 · localStorage</div>
+</div>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-screen="workout" onclick="switchScreen('workout')"><span class="ico">💪</span>운동</button>
+  <button class="nav-btn" data-screen="calendar" onclick="switchScreen('calendar')"><span class="ico">📅</span>달력</button>
+  <button class="nav-btn" data-screen="injury" onclick="switchScreen('injury')"><span class="ico">🩹</span>부상</button>
+  <button class="nav-btn" data-screen="settings" onclick="switchScreen('settings')"><span class="ico">⚙️</span>설정</button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════
+//  ROUTINE DATA
+// ═══════════════════════════════════════════
+const ROUTINES={
+chest_back:[
+{phase:'machine_warmup',label:'머신 웜업',phaseClass:'pw-machine',exercises:[
+  {name:'체스트 프레스 머신',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'warn',heading:'💡 포인트',items:['아주 가벼운 무게로 관절·근육만 가볍게 깨우는 용도','팔꿈치 각도 60~80° 유지, 어깨가 앞으로 말리지 않게']}
+  ]},
+  {name:'랫풀다운',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'warn',heading:'💡 포인트',items:['가벼운 중량으로 등·어깨 후면 깨우기','바를 앞쪽으로(목 뒤가 아닌) 가슴 쪽으로 내리기']}
+  ]}
+]},
+{phase:'free_warmup',label:'가벼운 프리 웜업',phaseClass:'pw-free',exercises:[
+  {name:'인클라인 프레스 (빈봉 / 가벼운 덤벨)',target:'2×12–15',rir:{label:'RIR 4–5',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['발을 단단히 고정, 등·둔근으로 벤치에 "아치" 만들고 어깨뼈를 뒤로 모아 아래로 내리기(견갑 후인·하강)','바는 대략 젖꼭지~명치 사이로 내려오게, 팔꿈치는 몸통에서 45–60° 정도']},
+    {type:'focus',heading:'⚠️ 주의점',items:['바를 내릴 때 어깨가 앞으로 말리지 않게, 어깨뼈가 끝까지 벤치에 고정돼 있어야 함','손목 과도하게 꺾지 말고, 손바닥 뒷부분(손꿈치)에 바가 실리게']},
+    {type:'focus',heading:'🚫 위험 요소',items:['어깨 가동범위 부족 + 무리한 고중량 → 견봉하 공간 압박, 회전근개/전면 삼각근 통증 위험','가슴보다 위쪽으로 내리며 팔꿈치를 너무 벌리면 전면 어깨·상부흉근에 과부하']}
+  ]},
+  {name:'로우 (빈봉 / 가벼운 덤벨)',target:'2×12–15',rir:{label:'RIR 4–5',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['골반 약간 뒤로, 허리 중립(등 허리 곡선 유지), 가슴을 약간 내민 자세','팔꿈치로 당긴다는 느낌, 어깨뼈를 뒤로 모으면서 흉곽 쪽으로 끌어오기']},
+    {type:'focus',heading:'⚠️ 주의점',items:['상체 각도 유지가 핵심: 올라갈수록 등 대신 허리에만 힘이 들어가는지 체크','바가 몸에서 멀어지면 하중이 허리로 증가 → 바는 항상 몸 가까이']},
+    {type:'focus',heading:'🚫 위험 요소',items:['허리 굽힘(라운드백) 상태에서 고중량 → 요추 디스크·척추기립근 과부하']}
+  ]}
+]},
+{phase:'main',label:'본세트',phaseClass:'pw-main',exercises:[
+  {name:'인클라인 덤벨 프레스 / 바벨 벤치',target:'4×6–10',rir:{label:'RIR 1–3',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['발을 단단히 고정, 등·둔근으로 벤치에 "아치" 만들고 어깨뼈를 뒤로 모아 아래로 내리기(견갑 후인·하강)','바는 대략 젖꼭지~명치 사이로 내려오게, 팔꿈치는 몸통에서 45–60° 정도','덤벨이면 가슴 바깥쪽 아래로 내려오게, 스트레치 포지션에서 밀어 올리기']},
+    {type:'focus',heading:'⚠️ 주의점',items:['바를 내릴 때 어깨가 앞으로 말리지 않게, 어깨뼈가 끝까지 벤치에 고정돼 있어야 함','손목 과도하게 꺾지 말고, 손바닥 뒷부분(손꿈치)에 바가 실리게','컨센트릭은 강하게 밀고, 에센트릭은 통제하며 천천히 내리기']},
+    {type:'focus',heading:'🚫 위험 요소',items:['어깨 가동범위 부족 + 무리한 고중량 → 견봉하 공간 압박, 회전근개/전면 삼각근 통증 위험','가슴보다 위쪽으로 내리며 팔꿈치를 너무 벌리면 전면 어깨·상부흉근에 과부하']}
+  ]},
+  {name:'바벨 로우 / 덤벨 로우',target:'4×8–12',rir:{label:'RIR 1–3',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['골반 약간 뒤로, 허리 중립(등 허리 곡선 유지), 가슴을 약간 내민 자세 유지','바를 당길 때 팔꿉치로 당긴다는 느낌, 어깨뼈를 뒤로 모으면서 흉곽 쪽으로 끌어오기','바가 몸에서 멀어지면 하중이 허리로 증가 → 바는 항상 몸 가까이']},
+    {type:'focus',heading:'⚠️ 주의점',items:['상체 각도 유지가 핵심: 올라갈수록 등 대신 허리에만 힘이 들어가는지 체크','바를 당긴 후 내릴 때도 허리 중립 잃지 않게']},
+    {type:'focus',heading:'🚫 위험 요소',items:['허리 굽힘(라운드백) 상태에서 고중량 → 요추 디스크·척추기립근 과부하']}
+  ]}
+]},
+{phase:'volume',label:'머신 볼륨',phaseClass:'pw-vol',exercises:[
+  {name:'체스트 프레스 머신',target:'3×10–12',rir:{label:'RIR 1–2',tier:'mid'},details:[
+    {type:'focus',heading:'💡 포인트',items:['프리 후에 들어가므로 폼 유지 + 자극 집중이 중요, 반동·치팅 최소','상완(위팔) 방향과 가동범위를 제어, 관절 끝지점에서 부딪히지 않게']}
+  ]},
+  {name:'플라이 머신',target:'3×12–15',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['프리 후에 들어가므로 폼 유지 + 자극 집중이 중요, 반동·치팅 최소','상완(위팔) 방향과 가동범위를 제어, 관절 끝지점에서 부딪히지 않게','가슴 중앙 수축을 의식하며 가슴이 모이는 느낌']},
+    {type:'danger',heading:'🚫 위험 요소',items:['너무 깊게 내려가면 어깨 전면·장두근 스트레칭 과부하']}
+  ]},
+  {name:'랫풀다운',target:'3×10–12',rir:{label:'RIR 1–2',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['프리 후에 들어가므로 폼 유지 + 자극 집중이 중요','바를 앞쪽으로 내리는 형태 유지','상완을 뒤로 당기며 광배근 수축을 의식']},
+    {type:'danger',heading:'🚫 위험 요소',items:['목 뒤로 내리는 변형은 회전근개·승모근에 부담 → 반드시 앞쪽으로']}
+  ]},
+  {name:'T바 로우',target:'3×10–12',rir:{label:'RIR 1–2',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['골반 약간 뒤로, 허리 중립(등 허리 곡선 유지), 가슴을 약간 내민 자세 유지','바를 당길 때 팔꿉치로 당긴다는 느낌, 어깨뼈를 뒤로 모으면서 흉곽 쪽으로 끌어오기']},
+    {type:'focus',heading:'⚠️ 주의점',items:['상체 각도 유지가 핵심: 올라갈수록 등 대신 허리에만 힘이 들어가는지 체크','바가 몸에서 멀어지면 하중이 허리로 증가 → 바는 항상 몸 가까이']},
+    {type:'focus',heading:'🚫 위험 요소',items:['허리 굽힘(라운드백) 상태에서 고중량 → 요추 디스크·척추기립근 과부하']}
+  ]},
+  {name:'시티드 로우',target:'3×10–12',rir:{label:'RIR 1–2',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['가슴을 패드에 붙이고 살짝 내민 자세 유지, 허리는 중립','팔꿈치를 몸 옆에서 뒤로 당기며, 끝지점에서 1초간 어깨뼈를 모아 준다']},
+    {type:'focus',heading:'⚠️ 주의점',items:['등 대신 팔로만 당기지 않게, "가슴을 케이블 쪽으로 가져간다" 느낌으로','과도하게 뒤로 젖히는 동작(허리 과신전) 피하기']},
+    {type:'focus',heading:'🚫 위험 요소',items:['허리를 반동으로 쓰는 습관 → 점점 등보다 허리운동이 되면서 허리 통증 가능']}
+  ]}
+]}
+],
+shoulder_arms:[
+{phase:'machine_warmup',label:'머신 웜업',phaseClass:'pw-machine',exercises:[
+  {name:'숄더 프레스 머신',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'warn',heading:'💡 포인트',items:['아주 가벼운 무게로 어깨 관절·삼각근 깨우기','팔꿈치가 몸통보다 약간 앞으로 오게, 바가 머리 위 수직 경로로']}
+  ]},
+  {name:'암컬 머신',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'warn',heading:'💡 포인트',items:['패드에 팔을 안정적으로 두고, 이두 깨우기 용도']}
+  ]},
+  {name:'케이블 푸시다운',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'warn',heading:'💡 포인트',items:['삼두 깨우기 용도, 가볍게']}
+  ]}
+]},
+{phase:'free_warmup',label:'가벼운 프리 웜업',phaseClass:'pw-free',exercises:[
+  {name:'서서 바벨 OHP (빈봉 / 가벼운)',target:'2×12–15',rir:{label:'RIR 4–5',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['둔근·복근을 먼저 단단히 조여서 허리 중립 유지','바는 턱 앞에서 시작해 코·머리 바로 위를 스치듯 수직에 가깝게 위로']},
+    {type:'focus',heading:'⚠️ 주의점',items:['허리를 뒤로 꺾어 "서서 인클라인 프레스"처럼 만들지 말기','턱을 약간 당긴 상태 유지, 머리를 과도하게 앞으로 내밀지 않기']},
+    {type:'focus',heading:'🚫 위험 요소',items:['어깨 가동성 부족 상태에서 바가 너무 앞쪽으로 이동 → 전면 어깨·상부흉근 스트레스 증가','허리 과신전 반복 → 요추 통증, 후관절 스트레스']},
+    {type:'focus',heading:'📌 코멘트',items:['서서 OHP는 코어·어깨 안정성 깨우는 용도로 아주 좋고, 허리 부담은 최소화 가능']}
+  ]},
+  {name:'스탠딩 바벨 컬 (가벼운)',target:'2×12–15',rir:{label:'RIR 4–5',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['팔꿈치를 몸 옆에 고정, 허리 반동 최소','상완이 고정된 상태에서 전완만 움직이게']}
+  ]},
+  {name:'딥스 (어시스트 / 체중, 가볍게)',target:'1–2×10–12',rir:{label:'RIR 4–5',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['가벼운 웜업 용도, 팔꿈치 90° 근처까지만']}
+  ]}
+]},
+{phase:'main',label:'본세트',phaseClass:'pw-main',exercises:[
+  {name:'앉아서 스미스 OHP / 프리 OHP',target:'4×8–12',rir:{label:'RIR 1–2',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['등받이에 상체를 붙이고, 엉덩이·등을 고정해서 바 경로를 일정하게','팔꿈치는 약간 앞쪽, 바는 귀 옆~머리 위를 수직에 가깝게','컨센트릭은 강하게·에센트릭은 통제']},
+    {type:'focus',heading:'⚠️ 주의점',items:['스미스의 수직 궤도에 맞춰 의자 위치·앉는 거리 조정','과도한 중량으로 반동 쓰지 말기']},
+    {type:'focus',heading:'🚫 위험 요소',items:['어깨 가동성 부족 상태에서 바가 머리 뒤로 너무 내려가면 견봉하 공간 압박','프리 OHP에서 손목 꺾인 상태로 중량 → 손목·팔꿈치 통증']},
+    {type:'focus',heading:'📌 변형 주기화',items:['8–12주 단위로 앉아서 프리 바벨 OHP / 덤벨 OHP 등 변형을 돌리면 어깨·삼각근 전체 발달에 더 좋음']}
+  ]},
+  {name:'스탠딩 바벨 컬',target:'3×8–12',rir:{label:'RIR 1–3',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['팔꿈치를 몸 옆에 고정, 허리 반동 최소','상완이 고정된 상태에서 전완만 움직이게','상승 시 손목이 과도하게 꺾이지 않게']},
+    {type:'danger',heading:'🚫 위험',items:['과중량 + 반동 → 관절보다 건·인대에 부담, 내추럴로 장기 성장엔 비효율']}
+  ]},
+  {name:'딥스 (삼두 위주)',target:'3×AMRAP',rir:{label:'RIR 1–2',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['몸을 너무 앞으로 기울이지 말고 상체를 비교적 세운 상태로 팔꿈치 신전에 집중 → 삼두 위주','하강 시 팔꿈치 90° 근처까지만, 어깨 관절이 과하게 뒤로 접히지 않게']},
+    {type:'focus',heading:'🚫 위험 요소',items:['깊게 내려가면서 어깨가 과신전 → 전면 어깨·흉근부 건 손상 위험','어깨 통증 이력 있으면 체중·가동범위 줄이거나 머신/푸시다운으로 대체']}
+  ]}
+]},
+{phase:'volume',label:'머신 볼륨',phaseClass:'pw-vol',exercises:[
+  {name:'레터럴 레이즈 (덤벨 / 머신)',target:'4×12–15',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['중량 욕심 줄이고 손목·팔꿈치에 힘 빼고 어깨 중심으로 팔을 휘두른다는 느낌','상완이 주동으로 움직이게, 새끼손가락 쪽을 살짝 올린 상태로 들면 중간 삼각근 더 집중']}
+  ]},
+  {name:'리버스 플라이 (후면)',target:'3×12–15',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['중량 욕심 줄이고 손목·팔꿈치에 힘 빼고 어깨 중심으로','상완이 주동으로 움직이게, 후면 삼각근 수축을 의식']}
+  ]},
+  {name:'암컬 머신',target:'3×10–12',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['패드에 팔을 안정적으로 두고, 이두 고립 수축','마지막 세트는 실패 근접으로 털기']}
+  ]},
+  {name:'케이블 푸시다운',target:'3×12–15',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['팔꿈치 몸 옆 고정, 손목 중립','끝지점에서 완전 신전 후 1초 정지','마지막 세트는 실패 근접으로 털기']},
+    {type:'danger',heading:'🚫 위험',items:['과중량 + 반동 → 관절보다 건·인대에 부담']}
+  ]}
+]}
+],
+legs:[
+{phase:'machine_warmup',label:'머신 웜업',phaseClass:'pw-machine',exercises:[
+  {name:'레그 프레스',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'warn',heading:'💡 포인트',items:['아주 가벼운 무게로 무릎·고관절 깨우기','허리가 패드에서 뜨지 않는 범위만']}
+  ]},
+  {name:'레그 익스텐션',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'warn',heading:'💡 포인트',items:['대퇴사두 깨우기 용도, 가볍게']}
+  ]},
+  {name:'이너 타이',target:'1×15',rir:{label:'RIR 5+',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['아주 가벼운 중량으로 고관절 내전근 스트레칭 + 준비 정도로만']},
+    {type:'warn',heading:'⚠️ 주의점',items:['힘을 세게 주는 고중량 이너타이는 사타구니·내전근 부상 위험이 있어, 웜업으로 1세트만 가볍게 하는 방식이 적절']}
+  ]}
+]},
+{phase:'free_warmup',label:'가벼운 프리 웜업',phaseClass:'pw-free',exercises:[
+  {name:'스쿼트 (빈봉 / 스미스)',target:'2×12–15',rir:{label:'RIR 4–5',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['발은 어깨너비±, 발끝 약간 바깥, 무릎·발끝 방향 맞추기','내려갈 때 엉덩이와 무릎이 동시에 굽혀지게, "무릎을 바깥으로 밀면서 엉덩이를 발 사이로 내린다" 느낌']},
+    {type:'focus',heading:'⚠️ 주의점',items:['무릎 안쪽으로 붕 뜨는 knee valgus 피하기 → 발바닥 3점(엄지, 새끼, 뒤꿈치)으로 바닥 잡고, 고관절 외회전 의식','허리 둥글게 말리거나(버트윙크) 너무 꺾지 않기, 중립 유지']},
+    {type:'focus',heading:'🚫 위험 요소',items:['가동범위·발목 운동성 부족 상태에서 깊이 욕심 → 허리 굽힘·무릎 스트레스']}
+  ]},
+  {name:'RDL (빈봉 / 가벼운 덤벨)',target:'2×12–15',rir:{label:'RIR 4–5',tier:'easy'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['무릎은 살짝 굽힌 상태로 고정, "엉덩이를 뒤로 빼면서" 바를 다리 가까이 따라내리기','햄스트링이 충분히 늘어나는 지점까지만 내려가고, 그 이하로는 허리 모양 유지가 우선']},
+    {type:'focus',heading:'⚠️ 주의점',items:['바가 몸에서 멀어지지 않게, 허리 중립·목 중립(턱 약간 당김) 유지']},
+    {type:'focus',heading:'🚫 위험 요소',items:['허리 굽힘 상태에서 깊게 내려가면 요추 디스크·척추기립근 부상 위험']}
+  ]}
+]},
+{phase:'main',label:'본세트',phaseClass:'pw-main',exercises:[
+  {name:'백 스쿼트 / 스미스 스쿼트',target:'4×6–10',rir:{label:'RIR 1–3',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['발은 어깨너비±, 발끝 약간 바깥, 무릎·발끝 방향 맞추기','내려갈 때 엉덩이와 무릎이 동시에 굽혀지게','발바닥 3점(엄지, 새끼, 뒤꿈치)으로 바닥 굳게 잡기']},
+    {type:'focus',heading:'⚠️ 주의점',items:['무릎 안쪽으로 붕 뜨는 knee valgus 피하기 → 고관절 외회전 의식','허리 둥글게 말리거나(버트윙크) 너무 꺾지 않기, 중립 유지']},
+    {type:'focus',heading:'🚫 위험 요소',items:['가동범위·발목 운동성 부족 상태에서 깊이 욕심 → 허리 굽힘·무릎 스트레스']}
+  ]},
+  {name:'루마니안 데드리프트 (바벨 / 덤벨)',target:'3×8–12',rir:{label:'RIR 1–3',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['무릎은 살짝 굽힌 상태로 고정, "엉덩이를 뒤로 빼면서" 바를 다리 가까이 따라내리기','햄스트링이 충분히 늘어나는 지점까지만 내려가고, 그 이하로는 허리 모양 유지가 우선','바는 항상 몸 가까이, 다리를 따라 수직으로']},
+    {type:'focus',heading:'⚠️ 주의점',items:['바가 몸에서 멀어지지 않게, 허리 중립·목 중립(턱 약간 당김) 유지','시선은 전방 2~3m 바닥, 목 과신전 피하기']},
+    {type:'focus',heading:'🚫 위험 요소',items:['허리 굽힘 상태에서 깊게 내려가면 요추 디스크·척추기립근 부상 위험']},
+    {type:'focus',heading:'📌 바벨 데드 추가 고려',items:['바벨 데드를 별도로 하고 싶으면 RDL을 줄이고(2세트) 컨벤셔널 데드를 3세트 정도 넣되, 스쿼트·프레스 중량과 합쳐 허리 피로 감당 가능한지 항상 체크']}
+  ]}
+]},
+{phase:'volume',label:'머신 볼륨',phaseClass:'pw-vol',exercises:[
+  {name:'파워 레그 프레스',target:'4×10–12',rir:{label:'RIR 1–2',tier:'mid'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['무릎이 가슴에 너무 닿을 정도로 깊게 말지 말고, 허리가 패드에서 뜨지 않는 범위까지','발 위치에 따라 쿼드/둔근 강조 조절 가능']}
+  ]},
+  {name:'레그 익스텐션',target:'3×12–15',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['반동 최소, 가동범위 끝지점에서 잠시 정지로 대퇴사두 수축 느끼기','마지막 세트 실패 근접으로 털기']}
+  ]},
+  {name:'레그 컬',target:'4×10–12',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['반동 최소, 가동범위 끝지점에서 잠시 정지로 햄스트링 수축 느끼기','마지막 세트 실패 근접으로 털기']}
+  ]},
+  {name:'이너 타이',target:'2×12–15',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['고관절 내전근 수축에 집중, 반동 최소']}
+  ]},
+  {name:'아우터 타이',target:'2×12–15',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['고관절 외전근(중둔근 등) 수축에 집중, 반동 최소']}
+  ]},
+  {name:'카프 레이즈 머신',target:'4–6×12–20',rir:{label:'RIR 0–2',tier:'hard'},details:[
+    {type:'focus',heading:'🎯 집중 포인트',items:['발목 완전 신전·완전 굴곡을 느리게 반복, 튕기지 않기','하단에서 1~2초 정지하며 비복근·가자미근 스트레치','마지막 세트 실패 근접으로 털기']}
+  ]}
+]}
+]};
+
+const DAY_NAMES={chest_back:'가슴+등',shoulder_arms:'어깨+팔',legs:'하체'};
+
+// ═══════════════════════════════════════════
+//  DATA LAYER
+// ═══════════════════════════════════════════
+const STORAGE_KEY='workoutTracker_v2';
+let db={dailyLogs:{},injuryLogs:[]};
+let selectedDate=todayStr();
+let currentScreen='workout';
+let calendarCursor=new Date();
+
+function todayStr(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function loadDB(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const p=JSON.parse(raw);
+      db.dailyLogs=p.dailyLogs||{};
+      db.injuryLogs=p.injuryLogs||[];
     }
+  }catch(e){console.error('DB load error',e);}
+}
 
-    function escapeHtml(str){
-      return String(str)
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+let saveTimer=null;
+function saveDB(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(db));
+    flashSave();
+  },300);
+}
+
+function flashSave(){
+  const dot=document.getElementById('autosaveDot');
+  dot.classList.add('flash');
+  setTimeout(()=>dot.classList.remove('flash'),600);
+}
+
+function getLog(date){
+  if(!db.dailyLogs[date]){
+    db.dailyLogs[date]={dayType:null,exercises:[],sleepMeta:null,note:''};
+  }
+  return db.dailyLogs[date];
+}
+
+function ensureExercises(log,dayType){
+  const routine=ROUTINES[dayType];
+  if(!routine)return;
+  if(log.dayType!==dayType){
+    log.dayType=dayType;
+    log.exercises=routine.map(p=>({
+      phase:p.phase,
+      name:null,
+      exercises:p.exercises.map(ex=>({name:ex.name,phase:ex.phase||p.phase,sets:[]}))
+    }));
+  }
+  // Sync structure if routine changed
+  routine.forEach((p,pi)=>{
+    if(!log.exercises[pi]){
+      log.exercises[pi]={phase:p.phase,name:null,exercises:p.exercises.map(ex=>({name:ex.name,phase:ex.phase||p.phase,sets:[]})),};
     }
-
-    function downloadFile(name, content, type){
-      const blob = new Blob([content], { type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = name;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function renderAll(){
-      renderHome();
-      renderCalendar();
-      renderStats();
-      renderSettings();
-    }
-
-    function setupCalendarSwipe(){
-      const wrap = document.getElementById("calendarWrap");
-      let startX = 0;
-      let startY = 0;
-      let moving = false;
-
-      wrap.addEventListener("touchstart", e => {
-        const t = e.changedTouches[0];
-        startX = t.clientX;
-        startY = t.clientY;
-        moving = true;
-      }, { passive:true });
-
-      wrap.addEventListener("touchend", e => {
-        if(!moving) return;
-        const t = e.changedTouches[0];
-        const dx = t.clientX - startX;
-        const dy = t.clientY - startY;
-        moving = false;
-
-        if(Math.abs(dx) < 40) return;
-        if(Math.abs(dx) < Math.abs(dy)) return;
-
-        if(dx < 0){
-          calendarCursor.setMonth(calendarCursor.getMonth() + 1);
-        }else{
-          calendarCursor.setMonth(calendarCursor.getMonth() - 1);
-        }
-        renderCalendar();
-        if(statsMode === "month") renderStats();
-      }, { passive:true });
-    }
-
-    // events
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchScreen(btn.dataset.screen));
+    p.exercises.forEach((ex,ei)=>{
+      if(!log.exercises[pi].exercises[ei]){
+        log.exercises[pi].exercises[ei]={name:ex.name,phase:ex.phase||p.phase,sets:[]};
+      }
     });
+  });
+}
 
-    document.getElementById("homeFilter").addEventListener("change", e => {
-      db.settings.placeFilter = e.target.value;
-      saveDB();
-      renderHome();
-    });
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+function switchScreen(name){
+  currentScreen=name;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id==='screen-'+name));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='calendar')renderCalendar();
+  if(name==='injury')renderInjuries();
+}
 
-    document.getElementById("sleepStart").addEventListener("input", updateSleepPill);
-    document.getElementById("sleepEnd").addEventListener("input", updateSleepPill);
-    document.getElementById("saveHomeBtn").addEventListener("click", saveHome);
+// ═══════════════════════════════════════════
+//  DATE
+// ═══════════════════════════════════════════
+const DOW=['일','월','화','수','목','금','토'];
+function shiftDate(delta){
+  const d=new Date(selectedDate+'T00:00:00');
+  d.setDate(d.getDate()+delta);
+  selectedDate=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  renderWorkout();
+}
+function goToday(){selectedDate=todayStr();renderWorkout();}
+function updateDateLabel(){
+  const d=new Date(selectedDate+'T00:00:00');
+  const label=document.getElementById('dateLabel');
+  label.innerHTML=`${d.getMonth()+1}/${d.getDate()} <span class="dow">${DOW[d.getDay()]}</span>`;
+  if(selectedDate===todayStr())label.innerHTML+=' <span style="font-size:.6rem;color:var(--green);margin-left:2px">TODAY</span>';
+}
 
-    document.getElementById("prevMonthBtn").addEventListener("click", () => {
-      calendarCursor.setMonth(calendarCursor.getMonth() - 1);
-      renderCalendar();
-      if(statsMode === "month") renderStats();
-    });
+// ═══════════════════════════════════════════
+//  DAY TYPE
+// ═══════════════════════════════════════════
+function selectDay(dayType){
+  document.querySelectorAll('.day-btn').forEach(b=>b.classList.toggle('active',b.dataset.day===dayType));
+  const log=getLog(selectedDate);
+  ensureExercises(log,dayType);
+  saveDB();
+  renderWorkout();
+}
 
-    document.getElementById("nextMonthBtn").addEventListener("click", () => {
-      calendarCursor.setMonth(calendarCursor.getMonth() + 1);
-      renderCalendar();
-      if(statsMode === "month") renderStats();
-    });
+// ═══════════════════════════════════════════
+//  RENDER WORKOUT
+// ═══════════════════════════════════════════
+function renderWorkout(){
+  updateDateLabel();
+  const log=db.dailyLogs[selectedDate];
+  if(!log||!log.dayType){
+    document.getElementById('workoutContent').innerHTML='<div class="empty-state"><span class="ico">🏋️</span>오늘 운동 종류를 선택하세요</div>';
+  }else{
+    renderExercises();
+  }
+  renderSleepUI();
+  renderSleepChart();
+  renderNoteUI();
+  document.querySelectorAll('.day-btn').forEach(b=>b.classList.toggle('active',b.dataset.day===(log?log.dayType:null)));
+}
 
-    document.getElementById("statsWeekBtn").addEventListener("click", () => {
-      statsMode = "week";
-      renderStats();
-    });
-
-    document.getElementById("statsMonthBtn").addEventListener("click", () => {
-      statsMode = "month";
-      renderStats();
-    });
-
-    document.getElementById("exportMdBtn").addEventListener("click", () => {
-      const title = (document.getElementById("reportTitle").value.trim() || "report").replace(/\s+/g,"_");
-      downloadFile(`${title}.md`, buildReportMarkdown(), "text/markdown;charset=utf-8");
-      showToast("Markdown 보고서를 저장했어요");
-    });
-
-    document.getElementById("exportHtmlBtn").addEventListener("click", () => {
-      const title = (document.getElementById("reportTitle").value.trim() || "report").replace(/\s+/g,"_");
-      downloadFile(`${title}.html`, buildReportHTML(), "text/html;charset=utf-8");
-      showToast("HTML 보고서를 저장했어요");
-    });
-
-    document.getElementById("startSoreBtn").addEventListener("click", () => {
-      db.sorenessLogs.push({
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-        group: document.getElementById("soreGroup").value,
-        startedAt: selectedDate,
-        recoveredAt: null
+function renderExercises(){
+  const log=db.dailyLogs[selectedDate];
+  if(!log)return;
+  const routine=ROUTINES[log.dayType];
+  if(!routine)return;
+  let html='';
+  routine.forEach((phase,pi)=>{
+    html+=`<div class="phase ${phase.phaseClass}"><div class="phase-head"><span class="dot"></span> ${phase.label}</div>`;
+    phase.exercises.forEach((ex,ei)=>{
+      const logEx=log.exercises[pi]&&log.exercises[pi].exercises[ei];
+      const sets=logEx?logEx.sets:[];
+      const rirClass='rir-'+ex.rir.tier;
+      html+=`<div class="ex-row" id="exRow-${pi}-${ei}">
+        <div class="ex-main" onclick="toggleEx(${pi},${ei})">
+          <span class="ex-name">${ex.name}</span>
+          <div class="ex-meta">
+            <span class="ex-target">${ex.target}</span>
+            <span class="ex-rir ${rirClass}">${ex.rir.label}</span>
+            <span class="ex-arrow">▼</span>
+          </div>
+        </div>
+        <div class="sets-area" id="setsArea-${pi}-${ei}">`;
+      sets.forEach((s,si)=>{
+        html+=`<div class="set-row">
+          <span class="set-label">${si+1}</span>
+          <input type="number" class="weight-input" placeholder="kg" value="${s.weight||''}" inputmode="decimal"
+            onchange="updateSet(${pi},${ei},${si},'weight',this.value)">
+          <span class="unit">kg</span>
+          <input type="number" class="reps-input" placeholder="회" value="${s.reps||''}" inputmode="numeric"
+            onchange="updateSet(${pi},${ei},${si},'reps',this.value)">
+          <span class="unit">회</span>
+          <button class="del-btn" onclick="removeSet(${pi},${ei},${si})">✕</button>
+        </div>`;
       });
-      saveDB();
-      renderSettings();
-      renderCalendar();
-      showToast("근육통 시작을 기록했어요");
-    });
-
-    document.getElementById("exportJsonBtn").addEventListener("click", exportJSON);
-    document.getElementById("importJsonBtn").addEventListener("click", () => document.getElementById("importFile").click());
-    document.getElementById("importFile").addEventListener("change", e => {
-      const file = e.target.files[0];
-      if(file) importJSON(file);
-    });
-
-    document.getElementById("clearAllBtn").addEventListener("click", clearAll);
-
-    document.getElementById("goTodayBtn").addEventListener("click", () => {
-      selectedDate = TODAY;
-      calendarCursor = new Date(TODAY + "T00:00:00");
-      renderAll();
-      switchScreen("home");
-      showToast("오늘 날짜로 이동했어요");
-    });
-
-    // PWA install
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const btn = document.getElementById("installBtn");
-      btn.style.display = "block";
-    });
-
-    document.getElementById("installBtn").addEventListener("click", async () => {
-      if(!deferredPrompt) return;
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      document.getElementById("installBtn").style.display = "none";
-    });
-
-    if("serviceWorker" in navigator){
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./service-worker.js").catch(console.error);
+      html+=`<button class="add-set-btn" onclick="addSet(${pi},${ei})">+ 세트 추가</button></div>`;
+      // Details accordion
+      html+=`<div class="ex-detail"><div class="ex-detail-inner">`;
+      ex.details.forEach(d=>{
+        html+=`<div class="${d.type}"><h4>${d.heading}</h4><ul>`;
+        d.items.forEach(item=>{html+=`<li>${item}</li>`;});
+        html+=`</ul></div>`;
       });
-    }
+      html+=`</div></div></div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('workoutContent').innerHTML=html;
+}
 
-    setupCalendarSwipe();
-    renderAll();
-  </script>
+function toggleEx(pi,ei){const row=document.getElementById(`exRow-${pi}-${ei}`);if(row)row.classList.toggle('open');}
+
+function addSet(pi,ei){
+  const log=getLog(selectedDate);
+  ensureExercises(log,log.dayType);
+  if(log.exercises[pi]&&log.exercises[pi].exercises[ei]){
+    log.exercises[pi].exercises[ei].sets.push({weight:0,reps:0});
+    saveDB();
+    renderExercises();
+    setTimeout(()=>{
+      const area=document.getElementById(`setsArea-${pi}-${ei}`);
+      if(area){const inputs=area.querySelectorAll('.weight-input');if(inputs.length)inputs[inputs.length-1].focus();}
+    },50);
+  }
+}
+
+function removeSet(pi,ei,si){
+  const log=getLog(selectedDate);
+  if(log.exercises[pi]&&log.exercises[pi].exercises[ei]){
+    log.exercises[pi].exercises[ei].sets.splice(si,1);
+    saveDB();renderExercises();
+  }
+}
+
+function updateSet(pi,ei,si,field,val){
+  const log=getLog(selectedDate);
+  if(log.exercises[pi]&&log.exercises[pi].exercises[ei]&&log.exercises[pi].exercises[ei].sets[si]){
+    log.exercises[pi].exercises[ei].sets[si][field]=parseFloat(val)||0;
+    saveDB();
+  }
+}
+
+// ═══════════════════════════════════════════
+//  SLEEP
+// ═══════════════════════════════════════════
+function onSleepChange(){
+  const log=getLog(selectedDate);
+  const s=document.getElementById('sleepStart').value;
+  const e=document.getElementById('sleepEnd').value;
+  if(s&&e){
+    const dur=calcSleepDuration(s,e);
+    log.sleepMeta={start:s,end:e,duration:dur};
+    document.getElementById('sleepDuration').textContent=`${dur}시간 수면`;
+  }else{
+    log.sleepMeta=null;
+    document.getElementById('sleepDuration').textContent='';
+  }
+  saveDB();renderSleepChart();
+}
+
+function calcSleepDuration(start,end){
+  const[sh,sm]=start.split(':').map(Number);
+  const[eh,em]=end.split(':').map(Number);
+  let diff=(eh*60+em)-(sh*60+sm);
+  if(diff<=0)diff+=24*60;
+  return Math.round(diff/60*10)/10;
+}
+
+function renderSleepUI(){
+  const log=db.dailyLogs[selectedDate];
+  const meta=log&&log.sleepMeta;
+  document.getElementById('sleepStart').value=meta?meta.start:'';
+  document.getElementById('sleepEnd').value=meta?meta.end:'';
+  document.getElementById('sleepDuration').textContent=meta?`${meta.duration}시간 수면`:'';
+}
+
+function renderSleepChart(){
+  const chart=document.getElementById('sleepChart');
+  let html='';
+  let maxDur=0;
+  const days=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const log=db.dailyLogs[ds];
+    const dur=log&&log.sleepMeta&&log.sleepMeta.duration?log.sleepMeta.duration:0;
+    if(dur>maxDur)maxDur=dur;
+    days.push({ds,dur,label:`${d.getMonth()+1}/${d.getDate()}`});
+  }
+  if(maxDur===0)maxDur=8;
+  days.forEach(day=>{
+    const h=day.dur?Math.max(8,(day.dur/maxDur)*52):4;
+    const opacity=day.dur?0.8:0.2;
+    html+=`<div class="sleep-bar-wrap">
+      <div class="sleep-bar-value">${day.dur||'-'}</div>
+      <div class="sleep-bar" style="height:${h}px;opacity:${opacity}"></div>
+      <div class="sleep-bar-label">${day.label}</div>
+    </div>`;
+  });
+  chart.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+//  NOTE
+// ═══════════════════════════════════════════
+function onNoteChange(){
+  const log=getLog(selectedDate);
+  log.note=document.getElementById('noteArea').value;
+  saveDB();
+}
+function renderNoteUI(){
+  const log=db.dailyLogs[selectedDate];
+  document.getElementById('noteArea').value=log?(log.note||''):'';
+}
+
+// ═══════════════════════════════════════════
+//  CALENDAR
+// ═══════════════════════════════════════════
+function calShift(delta){calendarCursor.setMonth(calendarCursor.getMonth()+delta);renderCalendar();}
+let calSelectedDate=null;
+
+function renderCalendar(){
+  const y=calendarCursor.getFullYear();
+  const m=calendarCursor.getMonth();
+  document.getElementById('calMonth').textContent=`${y}년 ${m+1}월`;
+  const firstDay=new Date(y,m,1);
+  let startDow=firstDay.getDay();
+  startDow=startDow===0?6:startDow-1;
+  const daysInMonth=new Date(y,m+1,0).getDate();
+  const today=todayStr();
+  const grid=document.getElementById('calGrid');
+  let html='';
+  ['월','화','수','목','금','토','일'].forEach(d=>{html+=`<div class="cal-head">${d}</div>`;});
+  const prevDays=new Date(y,m,0).getDate();
+  for(let i=0;i<startDow;i++){html+=`<div class="cal-cell other">${prevDays-startDow+1+i}</div>`;}
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls='cal-cell';
+    if(ds===today)cls+=' today';
+    if(ds===calSelectedDate)cls+=' selected';
+    const log=db.dailyLogs[ds];
+    let badges='';
+    if(log&&log.dayType)badges+='<span class="badge badge-workout"></span>';
+    if(log&&log.sleepMeta&&log.sleepMeta.duration)badges+='<span class="badge badge-sleep"></span>';
+    if(db.injuryLogs.some(inj=>ds>=inj.injuredAt&&(!inj.recoveredAt||ds<=inj.recoveredAt)))badges+='<span class="badge badge-injury"></span>';
+    html+=`<div class="${cls}" onclick="selectCalDate('${ds}')">${d}<div class="badges">${badges}</div></div>`;
+  }
+  const totalCells=startDow+daysInMonth;
+  const remaining=totalCells%7===0?0:7-(totalCells%7);
+  for(let i=1;i<=remaining;i++){html+=`<div class="cal-cell other">${i}</div>`;}
+  html+=`<div class="cal-legend"><span class="lg-blue">● 운동</span><span class="lg-purple">● 수면</span><span class="lg-red">● 부상</span></div>`;
+  grid.innerHTML=html;
+  renderCalDetail();
+}
+
+function selectCalDate(ds){
+  calSelectedDate=calSelectedDate===ds?null:ds;
+  renderCalendar();
+}
+
+function renderCalDetail(){
+  const container=document.getElementById('calDetail');
+  if(!calSelectedDate){container.innerHTML='';return;}
+  const log=db.dailyLogs[calSelectedDate];
+  if(!log||!log.dayType){
+    container.innerHTML=`<div class="cal-detail"><div class="cal-detail-title">${calSelectedDate}</div><div style="color:var(--sub);font-size:.72rem">기록 없음</div></div>`;
+    return;
+  }
+  let html=`<div class="cal-detail"><div class="cal-detail-title">${calSelectedDate} — ${DAY_NAMES[log.dayType]||log.dayType}</div>`;
+  if(log.exercises){
+    log.exercises.forEach(phase=>{
+      if(phase.exercises){
+        phase.exercises.forEach(ex=>{
+          if(ex.sets&&ex.sets.length>0){
+            html+=`<div class="cal-detail-ex"><span>${ex.name}</span><span class="cal-detail-sets">${ex.sets.map(s=>`${s.weight}kg×${s.reps}`).join(' / ')}</span></div>`;
+          }
+        });
+      }
+    });
+  }
+  if(log.sleepMeta&&log.sleepMeta.duration){
+    html+=`<div class="cal-detail-sleep">😴 ${log.sleepMeta.start} ~ ${log.sleepMeta.end} (${log.sleepMeta.duration}시간)</div>`;
+  }
+  if(log.note){html+=`<div class="cal-detail-note">📝 ${log.note}</div>`;}
+  html+=`</div>`;
+  container.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+//  INJURY
+// ═══════════════════════════════════════════
+function onInjuryPartChange(){
+  document.getElementById('customPartRow').style.display=document.getElementById('injuryPart').value==='__custom'?'block':'none';
+}
+document.getElementById('injuryDate').value=todayStr();
+
+function addInjury(){
+  let part=document.getElementById('injuryPart').value;
+  if(part==='__custom')part=document.getElementById('injuryPartCustom').value.trim();
+  if(!part){showToast('부위를 입력하세요');return;}
+  const desc=document.getElementById('injuryDesc').value.trim();
+  const date=document.getElementById('injuryDate').value;
+  if(!date){showToast('부상일을 입력하세요');return;}
+  db.injuryLogs.push({id:genId(),bodyPart:part,description:desc,injuredAt:date,recoveredAt:null,fullIntensityAt:null});
+  saveDB();showToast('부상 기록됨');
+  document.getElementById('injuryPart').value='';
+  document.getElementById('injuryPartCustom').value='';
+  document.getElementById('injuryDesc').value='';
+  document.getElementById('injuryDate').value=todayStr();
+  document.getElementById('customPartRow').style.display='none';
+  renderInjuries();
+}
+
+function markRecovered(id){
+  const inj=db.injuryLogs.find(i=>i.id===id);
+  if(inj){inj.recoveredAt=todayStr();saveDB();showToast('회복 처리됨');renderInjuries();}
+}
+
+function markFullIntensity(id){
+  const inj=db.injuryLogs.find(i=>i.id===id);
+  if(inj){inj.fullIntensityAt=todayStr();saveDB();showToast('고강도 복귀일 기록됨');renderInjuries();}
+}
+
+function deleteInjury(id){
+  if(!confirm('이 부상 기록을 삭제할까요?'))return;
+  db.injuryLogs=db.injuryLogs.filter(i=>i.id!==id);
+  saveDB();renderInjuries();
+}
+
+function renderInjuries(){
+  const active=db.injuryLogs.filter(i=>!i.recoveredAt);
+  const recovered=db.injuryLogs.filter(i=>i.recoveredAt);
+  let html='';
+  if(active.length===0){
+    html+='<div class="empty-state"><span class="ico">✅</span>활성 부상 없음</div>';
+  }else{
+    active.forEach(inj=>{
+      const daysSince=Math.floor((new Date()-new Date(inj.injuredAt+'T00:00:00'))/86400000);
+      html+=`<div class="injury-card">
+        <div class="injury-card-title">🔴 ${inj.bodyPart}</div>
+        <div class="injury-card-desc">${inj.description||'상세 설명 없음'}</div>
+        <div class="injury-card-dates"><span>🗓️ 부상: ${inj.injuredAt}</span><span>⏱️ ${daysSince}일차</span></div>
+        <div class="injury-card-actions">
+          <button class="btn-recover" onclick="markRecovered('${inj.id}')">✅ 회복됨</button>
+          <button class="btn-delete" onclick="deleteInjury('${inj.id}')">🗑️</button>
+        </div></div>`;
+    });
+  }
+  document.getElementById('activeInjuries').innerHTML=html;
+  html='';
+  if(recovered.length===0){
+    html+='<div class="empty-state" style="padding:16px"><span style="font-size:.72rem;color:var(--sub)">회복 완료 기록 없음</span></div>';
+  }else{
+    recovered.forEach(inj=>{
+      const recoveryDays=Math.floor((new Date(inj.recoveredAt+'T00:00:00')-new Date(inj.injuredAt+'T00:00:00'))/86400000);
+      html+=`<div class="injury-card recovered">
+        <div class="injury-card-title">🟢 ${inj.bodyPart}</div>
+        <div class="injury-card-desc">${inj.description||''}</div>
+        <div class="injury-card-dates">
+          <span>🗓️ ${inj.injuredAt} → ${inj.recoveredAt}</span><span>⏱️ ${recoveryDays}일 소요</span>
+          ${inj.fullIntensityAt?`<span>💪 고강도 복귀: ${inj.fullIntensityAt}</span>`:''}
+        </div>
+        <div class="injury-card-actions">
+          ${!inj.fullIntensityAt?`<button class="btn-intensity" onclick="markFullIntensity('${inj.id}')">💪 고강도 복귀일</button>`:''}
+          <button class="btn-delete" onclick="deleteInjury('${inj.id}')">🗑️</button>
+        </div></div>`;
+    });
+  }
+  document.getElementById('recoveredInjuries').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════
+function exportBackup(){
+  const data=JSON.stringify(db,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`workout_backup_${todayStr()}.json`;a.click();
+  URL.revokeObjectURL(url);showToast('백업 완료');
+}
+
+document.getElementById('importInput').addEventListener('change',function(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.dailyLogs&&data.injuryLogs){db=data;saveDB();showToast('복원 완료');renderWorkout();}
+      else{showToast('잘못된 파일 형식');}
+    }catch(err){showToast('파일 읽기 오류');}
+  };
+  reader.readAsText(file);this.value='';
+});
+
+function clearAllData(){
+  if(!confirm('모든 운동·부상·수면 기록이 삭제됩니다.\n정말 초기화할까요?'))return;
+  db={dailyLogs:{},injuryLogs:[]};
+  saveDB();showToast('초기화 완료');renderWorkout();
+}
+
+// ═══════════════════════════════════════════
+//  PWA
+// ═══════════════════════════════════════════
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('installBtn').style.display='flex';
+});
+function installPWA(){
+  if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;document.getElementById('installBtn').style.display='none';}
+}
+
+// ═══════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════
+function genId(){
+  if(crypto.randomUUID)return crypto.randomUUID();
+  return Date.now().toString(36)+Math.random().toString(36).substr(2,9);
+}
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+loadDB();
+renderWorkout();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+}
+</script>
 </body>
 </html>
